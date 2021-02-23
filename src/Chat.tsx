@@ -176,7 +176,7 @@ export default class Chat extends React.Component<{}, IChatState> {
                     this.saveMessage(new Message('Peer not found', true, true));
                     window.location.href = '/chat';
                 }
-            }, 3000);
+            }, 6000);
 
             connection.on('close', () => this.saveMessage(new Message('Peer has left the chat', true, true)));
         });
