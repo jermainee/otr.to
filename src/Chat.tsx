@@ -38,7 +38,7 @@ export default class Chat extends React.Component<{}, IChatState> {
     }
 
     public render() {
-        const link = "https://otrnew.test/chat#" + this.peerId;
+        const link = "https://otr.to/chat#" + this.peerId;
         const messageInput = this.state.connection ? (
             <div style={{ position: 'fixed', bottom: 0, width: '100%', padding: '.5rem' }}>
                 <form onSubmit={this.sendMessage}>
