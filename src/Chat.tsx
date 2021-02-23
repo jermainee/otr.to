@@ -40,7 +40,7 @@ export default class Chat extends React.Component<{}, IChatState> {
     public render() {
         const link = "https://otrnew.test/chat#" + this.peerId;
         const messageInput = this.state.connection ? (
-            <div className="has-background-white" style={{ position: 'fixed', bottom: 0, width: '100%', padding: '1rem'}}>
+            <div style={{ position: 'fixed', bottom: 0, width: '100%', padding: '.5rem' }}>
                 <form onSubmit={this.sendMessage}>
                     <div className="columns is-mobile is-gapless">
                         <div className="column">
@@ -48,12 +48,24 @@ export default class Chat extends React.Component<{}, IChatState> {
                                    name="userInput"
                                    type="text"
                                    placeholder="Type your message"
-                                   style={{ borderRadius: 0, border: 'none', outline: 'none', boxShadow: 'none' }}
+                                   style={{
+                                       border: 'none',
+                                       outline: 'none',
+                                       boxShadow: 'none',
+                                       borderRadius: '4px 0 0 4px'
+                                   }}
+                                   required={true}
+                                   autoFocus={true}
                             />
                         </div>
 
                         <div className="column is-narrow has-text-right">
-                            <button className="button is-primary" style={{ fontWeight: 'bold' }}>↣</button>
+                            <button className="button is-primary"
+                                    style={{
+                                        fontWeight: 'bold',
+                                        borderRadius: '0 4px 4px 0'
+                                    }}
+                            >↣</button>
                         </div>
                     </div>
                 </form>
@@ -62,7 +74,7 @@ export default class Chat extends React.Component<{}, IChatState> {
 
         return (
             <div>
-                <div>
+                <div className="container" style={{ marginBottom: '4rem'}}>
                     <Messages messages={this.state.messages}/>
                 </div>
 
@@ -155,10 +167,16 @@ export default class Chat extends React.Component<{}, IChatState> {
                 this.setState({ connection });
 
                 connection.on('data', data => {
-                    console.log('Incoming data', data);
                     this.saveMessage(new Message(data, false));
                 });
             });
+
+            setTimeout(() => {
+                if (this.state.connection === null) {
+                    this.saveMessage(new Message('Peer not found', true, true));
+                    window.location.href = '/chat';
+                }
+            }, 3000);
 
             connection.on('close', () => this.saveMessage(new Message('Peer has left the chat', true, true)));
         });
