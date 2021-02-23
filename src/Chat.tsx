@@ -90,20 +90,26 @@ export default class Chat extends React.Component<{}, IChatState> {
                     <div style={{ padding: '1rem'}}>
                         <h1 className="title is-4">Start chatting</h1>
                         <div style={{ marginBottom: "1rem" }}>To start a chat just send the following link to the desired person:</div>
-                        <input className="input" value={link} readOnly={true} style={{ marginBottom: "1rem" }}/>
 
-                        <CopyToClipboard text={link} onCopy={() => this.setState({ wasCopied: true })} style={{ marginBottom: "2rem" }}>
-                            { this.state.wasCopied ? (
-                                <button className="button is-primary is-fullwidth has-text-weight-bold">
-                                    <span>Done!</span>
-                                </button>
-                            ) : (
-                                <button className="button is-primary is-fullwidth has-text-weight-bold">
-                                    <span className="icon"><img src="/images/icons/copy.svg" alt="Copy link"/></span>
-                                    <span>Copy link</span>
-                                </button>
-                            )}
-                        </CopyToClipboard>
+                        <div className="columns is-gapless is-mobile">
+                            <div className="column">
+                                <input className="input" value={link} readOnly={true} style={{ marginBottom: "1rem", borderRadius: '4px 0 0 4px' }}/>
+                            </div>
+                            <div className="column is-narrow">
+                                <CopyToClipboard text={link} onCopy={() => this.setState({ wasCopied: true })}>
+                                    { this.state.wasCopied ? (
+                                        <button className="button is-primary has-text-weight-bold"  style={{ borderRadius: '0 4px 4px 0' }}>
+                                            <span>Copied!</span>
+                                        </button>
+                                    ) : (
+                                        <button className="button is-primary" style={{ borderRadius: '0 4px 4px 0' }}>
+                                            <span className="icon is-marginless"><img src="/images/icons/copy.svg" alt="Copy link"/></span>
+                                            <span className="is-hidden">Copy link</span>
+                                        </button>
+                                    )}
+                                </CopyToClipboard>
+                            </div>
+                        </div>
 
                         <h2 className="subtitle is-5">Share link</h2>
                         <div className="columns">
@@ -139,17 +145,33 @@ export default class Chat extends React.Component<{}, IChatState> {
 
                         <h2 className="subtitle is-4">How it works</h2>
                         <p>We believe that everyone has the right to communicate privately. That's why we provide otr.to, a tool that allows you to chat P2P. That is, with a direct connection between you and your conversation partner.</p>
-                        <ul>
-                            <li><strong>Peer to peer communication</strong><br/>You communicate directly, no logs saved on any servers</li>
-                            <li><strong>Absolutely anonymous</strong> and registration free</li>
-                            <li><strong>Browser based</strong><br/>You don't need to install any software and neither ask somebody else to do it, too</li>
-                            <li><strong>No chat history</strong><br/>It's all deleted with closing your browser tab</li>
-                        </ul>
+
+                        <div className="columns">
+                            <div className="column">
+                                <strong>Peer to peer communication</strong> You communicate directly, no logs saved on any servers
+                            </div>
+                            <div className="column">
+                                <strong>Absolutely anonymous</strong> and registration free
+                            </div>
+                        </div>
+
+                        <div className="columns">
+                            <div className="column">
+                                <strong>Browser based</strong> You don't need to install any software and neither ask somebody else to do it, too
+                            </div>
+                            <div className="column">
+                                <strong>No chat history</strong> It's all deleted with closing your browser tab
+                            </div>
+                        </div>
 
                         <hr/>
 
                         <h2 className="subtitle is-5">Self-destructing messages without a chat</h2>
                         <p>If you simply want to send self-destructing one-way messages without a chat, then be sure to check out <a href="https://nachricht.co/?source=otr" title="Send self-destructing messages" target="_blank">Nachricht.co</a></p>
+
+                        <hr/>
+
+                        <a href="https://v1.otr.to/" title="previous version">I want to use the previous version of otr.to</a>
                     </div>
                 </div>
             </div>
