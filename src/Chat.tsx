@@ -79,58 +79,77 @@ export default class Chat extends React.Component<{}, IChatState> {
         ) : '';
 
         return (
-            <div>
-                <div className="container" style={{ marginBottom: '4rem'}}>
+            <div style={{ marginBottom: '4rem'}}>
+                <div className="container">
                     <Messages messages={this.state.messages}/>
                 </div>
 
                 {messageInput}
 
-                <div className={"modal" + (this.state.showLink ? ' is-active': '')}>
-                    <div className="modal-content">
-                        <div className="box">
-                            <div style={{ marginBottom: "1rem", fontWeight: 'bold', fontSize: '1.2rem' }}>Start chatting</div>
-                            <div style={{ marginBottom: "1rem" }}>To start a chat just send the following link to the desired person:</div>
-                            <input className="input" value={link} readOnly={true} style={{ marginBottom: "1rem" }}/>
+                <div className={(this.state.showLink ? 'container content' : 'is-hidden')}>
+                    <div style={{ padding: '1rem'}}>
+                        <h1 className="title is-4">Start chatting</h1>
+                        <div style={{ marginBottom: "1rem" }}>To start a chat just send the following link to the desired person:</div>
+                        <input className="input" value={link} readOnly={true} style={{ marginBottom: "1rem" }}/>
 
-                            <CopyToClipboard text={link} onCopy={() => this.setState({ wasCopied: true })} style={{ marginBottom: "2rem" }}>
-                                { this.state.wasCopied ? (
-                                    <button className="button is-primary is-fullwidth has-text-weight-bold">
-                                        <span>Done!</span>
-                                    </button>
-                                ) : (
-                                    <button className="button is-primary is-fullwidth has-text-weight-bold">
-                                        <span>Copy link</span>
-                                        <span className="icon"><img src="/images/icons/copy.svg" alt="Copy link"/></span>
-                                    </button>
-                                )}
-                            </CopyToClipboard>
+                        <CopyToClipboard text={link} onCopy={() => this.setState({ wasCopied: true })} style={{ marginBottom: "2rem" }}>
+                            { this.state.wasCopied ? (
+                                <button className="button is-primary is-fullwidth has-text-weight-bold">
+                                    <span>Done!</span>
+                                </button>
+                            ) : (
+                                <button className="button is-primary is-fullwidth has-text-weight-bold">
+                                    <span className="icon"><img src="/images/icons/copy.svg" alt="Copy link"/></span>
+                                    <span>Copy link</span>
+                                </button>
+                            )}
+                        </CopyToClipboard>
 
-                            <div style={{ marginBottom: "1rem", fontWeight: 'bold' }}>Share link</div>
-                            <div className="columns">
-                                <div className="column">
-                                    <a id="shareTelegram"
-                                       href={"https://telegram.me/share/url?url=" + link}
-                                       className="button is-primary is-fullwidth has-text-weight-bold"
-                                       target="_blank"
-                                    >
-                                        <span>Telegram</span>
-                                        <span className="icon"><img src="/images/icons/telegram.svg" alt="Telegram"/></span>
-                                    </a>
-                                </div>
+                        <h2 className="subtitle is-5">Share link</h2>
+                        <div className="columns">
+                            <div className="column">
+                                <a href={"https://telegram.me/share/url?url=" + link}
+                                   className="button is-primary is-fullwidth has-text-weight-bold"
+                                   target="_blank"
+                                >
+                                    <span className="icon"><img src="/images/icons/telegram.svg" alt="Telegram"/></span>
+                                    <span>Telegram</span>
+                                </a>
+                            </div>
 
-                                <div className="column">
-                                    <a id="shareWhatsApp"
-                                       href={"https://wa.me/?text=" + link}
-                                       className="button is-primary is-fullwidth has-text-weight-bold"
-                                       target="_blank"
-                                    >
-                                        <span>WhatsApp</span>
-                                        <span className="icon"><img src="/images/icons/whatsapp.svg" alt="WhatsApp"/></span>
-                                    </a>
-                                </div>
+                            <div className="column">
+                                <a href={"https://wa.me/?text=" + link}
+                                   className="button is-primary is-fullwidth has-text-weight-bold"
+                                   target="_blank"
+                                >
+                                    <span className="icon"><img src="/images/icons/whatsapp.svg" alt="WhatsApp"/></span>
+                                    <span>WhatsApp</span>
+                                </a>
+                            </div>
+
+                            <div className="column">
+                                <a href={"mailto:?subject=&body=" + link}
+                                   className="button is-primary is-fullwidth has-text-weight-bold"
+                                   target="_blank"
+                                >
+                                    <span>E-Mail</span>
+                                </a>
                             </div>
                         </div>
+
+                        <h2 className="subtitle is-4">How it works</h2>
+                        <p>We believe that everyone has the right to communicate privately. That's why we provide otr.to, a tool that allows you to chat P2P. That is, with a direct connection between you and your conversation partner.</p>
+                        <ul>
+                            <li><strong>Peer to peer communication</strong><br/>You communicate directly, no logs saved on any servers</li>
+                            <li><strong>Absolutely anonymous</strong> and registration free</li>
+                            <li><strong>Browser based</strong><br/>You don't need to install any software and neither ask somebody else to do it, too</li>
+                            <li><strong>No chat history</strong><br/>It's all deleted with closing your browser tab</li>
+                        </ul>
+
+                        <hr/>
+
+                        <h2 className="subtitle is-5">Self-destructing messages without a chat</h2>
+                        <p>If you simply want to send self-destructing one-way messages without a chat, then be sure to check out <a href="https://nachricht.co/?source=otr" title="Send self-destructing messages" target="_blank">Nachricht.co</a></p>
                     </div>
                 </div>
             </div>
@@ -141,7 +160,7 @@ export default class Chat extends React.Component<{}, IChatState> {
         const peer = new Peer(this.peerId, { config: this.config });
         this.setState({ showLink: true });
 
-        peer.on('open', id => this.saveMessage(new Message('Created Peer: ' + id, true, true)));
+        //peer.on('open', id => this.saveMessage(new Message('Created Peer: ' + id, true, true)));
         peer.on('connection', connection => {
             console.log('open', peer.connections);
 
