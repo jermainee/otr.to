@@ -14,6 +14,14 @@ interface IChatState {
 
 export default class Chat extends React.Component<{}, IChatState> {
     private readonly peerId = ChatHelper.generatePeerId();
+    private readonly config = {
+        iceServers: [
+            {urls: 'stun:46.165.240.76:3478'},
+            {urls: 'stun:108.61.211.199:3478'},
+            {urls: 'turn:46.165.240.76:3478', credential: 'asperTinO1', username: 'otrto'},
+            {urls: 'turn:108.61.211.199:3478', credential: 'asperTinO1', username: 'otrto'}
+        ]
+    };
 
     public constructor(props: {}) {
         super(props);
@@ -28,10 +36,8 @@ export default class Chat extends React.Component<{}, IChatState> {
     public componentDidMount() {
         const targetPeerId = window.top.location.hash.substr(1);
 
-        console.log(targetPeerId);
-
         if (targetPeerId !== '') {
-            this.connect(new Peer(this.peerId), targetPeerId);
+            this.connect(new Peer(this.peerId, { config: this.config }), targetPeerId);
         } else {
             this.createPeer();
         }
@@ -132,7 +138,7 @@ export default class Chat extends React.Component<{}, IChatState> {
     }
 
     private createPeer(): Peer {
-        const peer = new Peer(this.peerId);
+        const peer = new Peer(this.peerId, { config: this.config });
         this.setState({ showLink: true });
 
         peer.on('open', id => this.saveMessage(new Message('Created Peer: ' + id, true, true)));
