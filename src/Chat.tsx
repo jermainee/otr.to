@@ -38,7 +38,7 @@ export default class Chat extends React.Component<{}, IChatState> {
     }
 
     public render() {
-        const link = "https://otr.to/chat#" + this.peerId;
+        const link = "https://otr.to/#" + this.peerId;
         const messageInput = this.state.connection ? (
             <div style={{ position: 'fixed', bottom: 0, width: '100%', padding: '.5rem' }}>
                 <form onSubmit={this.sendMessage}>
@@ -174,7 +174,7 @@ export default class Chat extends React.Component<{}, IChatState> {
             setTimeout(() => {
                 if (this.state.connection === null) {
                     this.saveMessage(new Message('Peer not found', true, true));
-                    window.location.href = '/chat';
+                    window.location.href = '/';
                 }
             }, 6000);
 

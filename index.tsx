@@ -1,7 +1,6 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import { BrowserRouter as Router, Route, Link } from "react-router-dom";
-import FrontPage from "./src/FrontPage";
+import { BrowserRouter as Router, Route } from "react-router-dom";
 import Chat from "./src/Chat";
 
 import "bulma";
@@ -9,8 +8,7 @@ import "bulma";
 ReactDOM.render(
     <Router>
         <div>
-            <Route path="/" exact component={FrontPage} />
-            <Route path="/chat" component={Chat} />
+            <Route path="/" exact component={Chat} />
         </div>
     </Router>,
     document.getElementById("root")
