@@ -74,6 +74,7 @@ export default class Chat extends React.PureComponent<{}, IChatState> {
     private connect(peer: Peer, targetPeerId: string) {
         peer.on('open', id => {
             console.log('id', id)
+            this.saveMessage(new Message('Created Peer: ' + id, true, true));
 
             const connection = peer.connect(targetPeerId);
 

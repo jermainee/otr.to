@@ -14,7 +14,7 @@ export default class Messages extends React.Component<IMessagesProps> {
                         return (
                             <div key={index}
                                  className="has-text-centered"
-                                 style={{ padding: '.5rem' }}
+                                 style={{ padding: '.5rem', fontSize: '.8rem' }}
                             >
                                 { message.text }
                             </div>
