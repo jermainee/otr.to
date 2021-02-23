@@ -26,7 +26,7 @@ export default class Messages extends React.Component<IMessagesProps> {
                              className={ message.isSender ? 'has-text-right' : 'has-text-left' }
                              style={{ padding: '.5rem' }}
                         >
-                            <span className={ "tag is-medium " + (message.isSender ? 'is-success' : 'is-light') }>
+                            <span className={ "tag is-medium " + (message.isSender ? 'is-primary' : 'is-light') }>
                                 { message.text }
                             </span>
                         </div>
