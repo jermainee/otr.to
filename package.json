@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "webpack --mode='production' --optimize-minimize",
+    "build": "webpack --mode='production'",
     "dev": "webpack --mode='development' --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
