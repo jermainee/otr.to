@@ -88,6 +88,10 @@ export default class Chat extends React.Component<{}, IChatState> {
 
                 <div className={(this.state.showLink ? 'container content' : 'is-hidden')}>
                     <div style={{ padding: '1rem'}}>
+                        <div className="notification">
+                            In case of bugs, please let me know (info@nachricht.co). <a href="https://v1.otr.to/" title="previous version">I want to use the previous version of otr.to</a>
+                        </div>
+
                         <h1 className="title is-4">Start chatting</h1>
                         <div style={{ marginBottom: "1rem" }}>To start a chat just send the following link to the desired person:</div>
 
@@ -168,10 +172,6 @@ export default class Chat extends React.Component<{}, IChatState> {
 
                         <h2 className="subtitle is-5">Self-destructing messages without a chat</h2>
                         <p>If you simply want to send self-destructing one-way messages without a chat, then be sure to check out <a href="https://nachricht.co/?source=otr" title="Send self-destructing messages" target="_blank">Nachricht.co</a></p>
-
-                        <hr/>
-
-                        <a href="https://v1.otr.to/" title="previous version">I want to use the previous version of otr.to</a>
                     </div>
                 </div>
             </div>
