@@ -54,9 +54,10 @@ export default class Chat extends React.Component<{}, IChatState> {
                                    name="userInput"
                                    type="text"
                                    placeholder="Type your message"
-                                   autoComplete={false}
-                                   autoCapitalize={false}
-                                   autoCorrect={false}
+                                   autoComplete="off"
+                                   autoCapitalize="off"
+                                   autoCorrect="off"
+                                   spellCheck="false"
                                    style={{
                                        border: 'none',
                                        outline: 'none',
