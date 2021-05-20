@@ -249,5 +249,9 @@ export default class Chat extends React.Component<{}, IChatState> {
                 message
             ]
         });
+
+        setTimeout(() => {
+            document.querySelector('html').scrollTop = 999999999;
+        }, 1);
     }
 }
