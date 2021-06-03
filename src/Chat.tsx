@@ -92,10 +92,6 @@ export default class Chat extends React.Component<{}, IChatState> {
 
                 <div className={(this.state.showLink ? 'container content' : 'is-hidden')}>
                     <div style={{ padding: '1rem'}}>
-                        <div className="notification">
-                            In case of bugs, please let me know (info@nachricht.co). <a href="https://v1.otr.to/" title="previous version">I want to use the previous version of otr.to</a>
-                        </div>
-
                         <h1 className="title is-4">Start chatting</h1>
                         <div style={{ marginBottom: "1rem" }}>To start a chat just send the following link to the desired person:</div>
 
@@ -174,6 +170,12 @@ export default class Chat extends React.Component<{}, IChatState> {
 
                         <hr/>
 
+                        <h2 className="subtitle is-5">Open Source</h2>
+                        <p>In case of bugs, please let me know and create an issue on the projects GitHub page. <a href="https://github.com/jermainee/otr.to" title="otr.to on GitHub">jermainee/otr.to</a></p>
+                        <p>And if you can code yourself, I'd love to receive your pull request. :)</p>
+
+                        <hr/>
+
                         <h2 className="subtitle is-5">Self-destructing messages without a chat</h2>
                         <p>If you simply want to send self-destructing one-way messages without a chat, then be sure to check out <a href="https://nachricht.co/?source=otr" title="Send self-destructing messages" target="_blank">Nachricht.co</a></p>
                     </div>
@@ -186,7 +188,6 @@ export default class Chat extends React.Component<{}, IChatState> {
         const peer = new Peer(this.peerId, { config: this.config });
         this.setState({ showLink: true });
 
-        //peer.on('open', id => this.saveMessage(new Message('Created Peer: ' + id, true, true)));
         peer.on('connection', connection => {
             console.log('open', peer.connections);
 
