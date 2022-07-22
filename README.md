@@ -1,9 +1,13 @@
-# otr.to - peer-to-peer chat in your web browser
+<h1 align="center">otr.to</h1>
+<p align="center">
+  Peer-to-peer chat in your web browser
+  <br/><br/>
+  We believe that everyone has the right to communicate privately.<br/>
+  That's why we provide otr.to, a tool that allows you to chat P2P.
+  <br/><br/>
+  Website: https://otr.to
+</p>
 
-We believe that everyone has the right to communicate privately.
-That's why we provide otr.to, a tool that allows you to chat P2P.
-
-Website: [otr.to](https://otr.to)
 
 ## Mainly used packages:
  * [facebook/react](https://github.com/facebook/react)
