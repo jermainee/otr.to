@@ -178,10 +178,6 @@ export default class Chat extends React.Component<{}, IChatState> {
 
                         <h2 className="subtitle is-5">Self-destructing messages without a chat</h2>
                         <p>If you simply want to send self-destructing one-way messages without a chat, then be sure to check out <a href="https://nachricht.co/?source=otr" title="Send self-destructing messages" target="_blank">Nachricht.co</a></p>
-
-                        <hr/>
-
-                        <a href="https://v1.otr.to" title="otr.to v1">I want to use the previous version</a>
                     </div>
                 </div>
             </div>
