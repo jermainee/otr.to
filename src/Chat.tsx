@@ -7,6 +7,7 @@ import {CopyToClipboard} from 'react-copy-to-clipboard';
 
 interface IChatState {
     messages: Message[];
+    // @ts-ignore
     connection: Peer.DataConnection|null;
     showLink: boolean;
     wasCopied: boolean;
@@ -196,7 +197,7 @@ export default class Chat extends React.Component<{}, IChatState> {
             this.saveMessage(new Message('Connected to Peer', true, true));
             this.setState({ connection });
 
-            connection.on('data', data => {
+            connection.on('data', (data: string) => {
                 this.saveMessage(new Message(data, false));
             });
 
@@ -218,7 +219,7 @@ export default class Chat extends React.Component<{}, IChatState> {
                 this.saveMessage(new Message('Connected to Peer: ' + targetPeerId, true, true));
                 this.setState({ connection });
 
-                connection.on('data', data => {
+                connection.on('data', (data: string) => {
                     this.saveMessage(new Message(data, false));
                 });
             });
