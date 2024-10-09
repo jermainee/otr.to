@@ -47,7 +47,7 @@ export default class Chat extends React.Component<{}, IChatState> {
     public render() {
         const link = "https://otr.to/#" + this.peerId;
         const messageInput = this.state.connection ? (
-            <div style={{ position: 'fixed', bottom: 0, width: '100%', padding: '.5rem' }}>
+            <div className="container" style={{ position: 'fixed', bottom: 0, right: '50%', transform: 'translateX(50%)', width: '100%', padding: '.5rem' }}>
                 <form onSubmit={this.sendMessage}>
                     <div className="columns is-mobile is-gapless">
                         <div className="column">
@@ -60,7 +60,6 @@ export default class Chat extends React.Component<{}, IChatState> {
                                    autoCorrect="off"
                                    spellCheck="false"
                                    style={{
-                                       border: 'none',
                                        outline: 'none',
                                        boxShadow: 'none',
                                        borderRadius: '4px 0 0 4px'
@@ -209,12 +208,15 @@ export default class Chat extends React.Component<{}, IChatState> {
         return peer;
     }
 
-    private connect(peer: Peer, targetPeerId: string) {
+    /**
+     *
+     *
+     */
+    private connect(peer: Peer, targetPeerId: string): void {
         peer.on('open', id => {
             this.saveMessage(new Message('Created Peer: ' + id, true, true));
 
             const connection = peer.connect(targetPeerId);
-
             connection.on('open', () => {
                 this.saveMessage(new Message('Connected to Peer: ' + targetPeerId, true, true));
                 this.setState({ connection });
