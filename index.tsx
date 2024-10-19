@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Route } from "react-router-dom";
 import Chat from "./src/Chat";
 
 import "bulma";
+import "./github-button.js";
 
 ReactDOM.render(
     <Router>

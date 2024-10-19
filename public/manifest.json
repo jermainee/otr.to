@@ -1,5 +1,5 @@
 {
-    "lang": "de",
+    "lang": "en",
     "name": "otr.to",
     "short_name": "otr.to",
     "scope": "/",
@@ -7,41 +7,7 @@
     "start_url": "/?source=pwa",
     "theme_color": "#00d1b2",
     "background_color": "#ffffff",
-    "description": "We believe that everyone has the right to communicate privately. Anonymous, no logs, no servers",
+    "description": "A secure p2p chat in your web browser.",
     "orientation": "portrait",
-    "prefer_related_applications": false,
-    "icons": [
-        {
-            "src": "https://nachricht.co/images/appicons/144.png",
-            "sizes": "144x144"
-        },
-        {
-            "src": "https://nachricht.co/img/favicon.ico",
-            "sizes": "32x32"
-        },
-        {
-            "src": "https://nachricht.co/images/appicons/40.png",
-            "sizes": "40x40"
-        },
-        {
-            "src": "https://nachricht.co/images/appicons/80.png",
-            "sizes": "80x80"
-        },
-        {
-            "src": "https://nachricht.co/images/appicons/180.png",
-            "sizes": "180x180"
-        },
-        {
-            "src": "https://nachricht.co/images/appicons/512.png",
-            "sizes": "512x512"
-        },
-        {
-            "src": "https://nachricht.co/images/appicons/1024.png",
-            "sizes": "1024x1024"
-        },
-        {
-            "src": "https://nachricht.co/images/appicons/180.png",
-            "sizes": "180x180"
-        }
-    ]
+    "prefer_related_applications": false
 }
