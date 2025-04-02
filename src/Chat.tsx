@@ -92,22 +92,6 @@ export default class Chat extends React.Component<{}, IChatState> {
 
                 <div className={(this.state.showLink ? 'container content' : 'is-hidden')}>
                     <div style={{padding: '1rem'}}>
-                        <section className="message p-4">
-                            <div className="columns is-vcentered">
-                                <div className="column">
-                                    <p className="subtitle is-6">
-                                        <strong>otr.to is a free web tool</strong> and we want to keep it that way. If
-                                        you find our service useful, consider making a small contribution. Thank you! ❤️
-                                    </p>
-                                </div>
-                                <div className="column is-narrow">
-                                    <a href="https://www.paypal.com/donate/?hosted_button_id=4VEYUYKJKBLMC"
-                                       className="button is-normal has-text-weight-bold is-primary is-outlined"
-                                       target="_blank">Donate via PayPal</a>
-                                </div>
-                            </div>
-                        </section>
-
                         <h1 className="title is-4">Start chatting</h1>
                         <div style={{marginBottom: "1rem"}}>To start a chat just send the following link to the desired
                             person:
