@@ -95,7 +95,7 @@ export default class Chat extends React.Component<{}, IChatState> {
                                     border: '1px solid #dbdbdb',
                                     borderRight: 'none'
                                 }}
-                                title="Datei anhängen"
+                                title="Attach file"
                             >
                                 📎
                             </button>
@@ -252,8 +252,8 @@ export default class Chat extends React.Component<{}, IChatState> {
                                 <strong>{transfer.name}</strong> ({this.formatFileSize(transfer.size)})
                                 <br />
                                 <small>
-                                    {transfer.isComplete ? 'Übertragung abgeschlossen' :
-                                        `${transfer.receivedChunks}/${transfer.totalChunks} Chunks empfangen`}
+                                    {transfer.isComplete ? 'Transfer completed' :
+                                        `${transfer.receivedChunks}/${transfer.totalChunks} chunks received`}
                                 </small>
                             </div>
                             <div className="column is-narrow">
