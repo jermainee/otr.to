@@ -86,7 +86,7 @@ export default class Chat extends React.Component<{}, IChatState> {
     }
 
     public componentWillUnmount() {
-        this.expireAlias()
+        this.expireAlias();
     }
 
     public render() {
@@ -340,11 +340,7 @@ export default class Chat extends React.Component<{}, IChatState> {
                 console.log('open', peer.connections);
 
                 this.expireAlias();
-                if (this.state.alias !== '') {
-                    this.setState({alias: ''});
-                }
-
-                this.setState({showLink: false});
+                this.setState({alias: '', showLink: false});
 
                 this.saveMessage(new Message('Connected to Peer', true, true));
                 this.setState({connection});
@@ -372,7 +368,12 @@ export default class Chat extends React.Component<{}, IChatState> {
         const aliasPeer = new Peer(alias, {config: this.config});
         this.aliasPeer = aliasPeer;
 
-        aliasPeer.on('open', () => this.setState({alias}));
+        aliasPeer.on('open', () => {
+            if (this.aliasPeer !== aliasPeer) {
+                return;
+            }
+            this.setState({alias});
+        });
 
         aliasPeer.on('connection', connection => {
             connection.on('open', () => {
@@ -396,8 +397,9 @@ export default class Chat extends React.Component<{}, IChatState> {
     }
 
     private expireAlias(): void {
-        this.aliasPeer?.destroy();
+        const aliasPeer = this.aliasPeer;
         this.aliasPeer = null;
+        aliasPeer?.destroy();
     }
 
     private connect(peer: Peer, targetPeerId: string): void {
