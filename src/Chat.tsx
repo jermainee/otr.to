@@ -5,6 +5,10 @@ import Message from "./Struct/Message";
 import Messages from "./Messages";
 import {CopyToClipboard} from 'react-copy-to-clipboard';
 
+interface IChatProps {
+    code?: string;
+}
+
 interface IChatState {
     messages: Message[];
     // @ts-ignore
@@ -12,6 +16,7 @@ interface IChatState {
     showLink: boolean;
     wasCopied: boolean;
     fileTransfers: Map<string, FileTransfer>;
+    code?: string;
 }
 
 interface FileTransfer {
@@ -37,9 +42,14 @@ interface FileMessage {
     chunk?: ArrayBuffer;
 }
 
-export default class Chat extends React.Component<{}, IChatState> {
+export default class Chat extends React.Component<IChatProps, IChatState> {
     private readonly peerId = ChatHelper.generatePeerId();
+    private readonly secure = window.location.protocol === 'https:';
     private readonly config = {
+        host: window.location.hostname,
+        port: Number(window.location.port) || (this.secure ? 443 : 80),
+        path: '/peerjs',
+        secure: this.secure,
         iceServers: [
             {urls: 'stun:46.165.240.76:3478'},
             {urls: 'stun:108.61.211.199:3478'},
@@ -65,15 +75,25 @@ export default class Chat extends React.Component<{}, IChatState> {
     public componentDidMount() {
         const targetPeerId = window.top.location.hash.substr(1);
 
-        if (targetPeerId !== '') {
-            this.connect(new Peer(this.peerId, { config: this.config }), targetPeerId);
+        if (this.props.code) {
+            this.joinRoom(this.props.code);
+        } else if (targetPeerId !== '') {
+            this.connect(new Peer(this.peerId, this.config), targetPeerId);
         } else {
             this.createPeer();
         }
     }
 
+    public componentWillUnmount() {
+        if (this.state.code) {
+            this.unregisterCode(this.state.code);
+        }
+    }
+
     public render() {
-        const link = "https://otr.to/#" + this.peerId;
+        const link = this.state.code
+            ? window.location.origin + "/c/" + this.state.code
+            : "https://otr.to/#" + this.peerId;
         const messageInput = this.state.connection ? (
             <div className="container" style={{ position: 'fixed', bottom: 0, right: '50%', transform: 'translateX(50%)', width: '100%', padding: '.5rem' }}>
                 <form onSubmit={this.sendMessage}>
@@ -281,8 +301,10 @@ export default class Chat extends React.Component<{}, IChatState> {
     }
 
     private createPeer(): Peer {
-        const peer = new Peer(this.peerId, {config: this.config});
-        this.setState({showLink: true});
+        const code = ChatHelper.generateCode();
+        const peer = new Peer(this.peerId, this.config);
+        this.registerCode(code);
+        this.setState({showLink: true, code});
 
         peer.on('connection', connection => {
             console.log('open', peer.connections);
@@ -334,6 +356,43 @@ export default class Chat extends React.Component<{}, IChatState> {
             }, 6000);
 
             connection.on('close', () => this.saveMessage(new Message('Peer has left the chat', true, true)));
+        });
+    }
+
+    private async joinRoom(code: string): Promise<void> {
+        let peerIds: string[];
+        try {
+            const response = await fetch("/api/codes/" + code);
+            const data = await response.json();
+            peerIds = data.peerIds || [];
+        } catch {
+            this.saveMessage(new Message('Room not found', true, true));
+            window.location.href = '/';
+            return;
+        }
+
+        if (peerIds.length === 0) {
+            this.saveMessage(new Message('Room not found', true, true));
+            window.location.href = '/';
+            return;
+        }
+
+        this.connect(new Peer(this.peerId, this.config), peerIds[0]);
+    }
+
+    private registerCode(code: string): void {
+        fetch("/api/codes", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, peerId: this.peerId })
+        });
+    }
+
+    private unregisterCode(code: string): void {
+        fetch("/api/codes/" + code, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ peerId: this.peerId })
         });
     }
 

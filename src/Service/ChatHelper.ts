@@ -11,4 +11,22 @@ export default class ChatHelper
 
         return Array.from(array, byte => byte.toString(36)).join('').substring(0, 22);
     }
+
+    public static generateCode(length: number = 6): string
+    {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+        if (!window.crypto || !window.crypto.getRandomValues) {
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return result;
+        }
+
+        const array = new Uint32Array(length);
+        window.crypto.getRandomValues(array);
+
+        return Array.from(array, n => chars[n % chars.length]).join('');
+    }
 }
