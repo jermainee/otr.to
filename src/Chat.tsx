@@ -1,5 +1,6 @@
 import * as React from "react";
 import ChatHelper from "./Service/ChatHelper";
+import CryptoHelper from "./Service/CryptoHelper";
 import Peer from "peerjs";
 import Message from "./Struct/Message";
 import Messages from "./Messages";
@@ -61,6 +62,12 @@ export default class Chat extends React.Component<IChatProps, IChatState> {
     private fileInputRef = React.createRef<HTMLInputElement>();
     private readonly CHUNK_SIZE = 16384; // 16KB chunks
 
+    private code: string | null = null;
+    private registered = false;
+    private queueTimer: number | null = null;
+    private messageKey: CryptoKey | null = null;
+    private readonly seenMessages = new Set<string>();
+
     public constructor(props: {}) {
         super(props);
         this.state = {
@@ -85,8 +92,11 @@ export default class Chat extends React.Component<IChatProps, IChatState> {
     }
 
     public componentWillUnmount() {
-        if (this.state.code) {
-            this.unregisterCode(this.state.code);
+        if (this.queueTimer !== null) {
+            window.clearInterval(this.queueTimer);
+        }
+        if (this.registered && this.code) {
+            this.unregisterCode(this.code);
         }
     }
 
@@ -94,7 +104,7 @@ export default class Chat extends React.Component<IChatProps, IChatState> {
         const link = this.state.code
             ? window.location.origin + "/c/" + this.state.code
             : "https://otr.to/#" + this.peerId;
-        const messageInput = this.state.connection ? (
+        const messageInput = (this.state.connection || !!this.code) ? (
             <div className="container" style={{ position: 'fixed', bottom: 0, right: '50%', transform: 'translateX(50%)', width: '100%', padding: '.5rem' }}>
                 <form onSubmit={this.sendMessage}>
                     <div className="columns is-mobile is-gapless">
@@ -302,9 +312,12 @@ export default class Chat extends React.Component<IChatProps, IChatState> {
 
     private createPeer(): Peer {
         const code = ChatHelper.generateCode();
+        this.code = code;
+        this.registered = true;
         const peer = new Peer(this.peerId, this.config);
         this.registerCode(code);
         this.setState({showLink: true, code});
+        this.initQueue(code);
 
         peer.on('connection', connection => {
             console.log('open', peer.connections);
@@ -350,8 +363,7 @@ export default class Chat extends React.Component<IChatProps, IChatState> {
 
             setTimeout(() => {
                 if (this.state.connection === null) {
-                    this.saveMessage(new Message('Peer not found', true, true));
-                    window.location.href = '/';
+                    this.saveMessage(new Message('Peer is offline — your messages will be delivered when they return', true, true));
                 }
             }, 6000);
 
@@ -360,20 +372,20 @@ export default class Chat extends React.Component<IChatProps, IChatState> {
     }
 
     private async joinRoom(code: string): Promise<void> {
-        let peerIds: string[];
+        this.code = code;
+        this.initQueue(code);
+
+        let peerIds: string[] = [];
         try {
             const response = await fetch("/api/codes/" + code);
             const data = await response.json();
             peerIds = data.peerIds || [];
         } catch {
-            this.saveMessage(new Message('Room not found', true, true));
-            window.location.href = '/';
-            return;
+            peerIds = [];
         }
 
         if (peerIds.length === 0) {
-            this.saveMessage(new Message('Room not found', true, true));
-            window.location.href = '/';
+            this.saveMessage(new Message('The room owner is offline — your messages will be delivered when they return', true, true));
             return;
         }
 
@@ -396,13 +408,85 @@ export default class Chat extends React.Component<IChatProps, IChatState> {
         });
     }
 
+    private async initQueue(code: string): Promise<void> {
+        this.messageKey = await CryptoHelper.deriveKey(code);
+        this.pollQueue();
+        this.queueTimer = window.setInterval(() => this.pollQueue(), 3000);
+    }
+
+    private async pollQueue(): Promise<void> {
+        if (!this.code || !this.messageKey) return;
+
+        let messages;
+        try {
+            const response = await fetch("/api/messages/" + this.code);
+            const data = await response.json();
+            messages = data.messages || [];
+        } catch {
+            return;
+        }
+
+        for (const entry of messages) {
+            if (this.seenMessages.has(entry.id)) continue;
+            this.seenMessages.add(entry.id);
+
+            let plaintext;
+            try {
+                plaintext = await CryptoHelper.decrypt(this.messageKey, entry.ciphertext);
+            } catch {
+                continue;
+            }
+
+            let from: string;
+            let text: string;
+            try {
+                ({ from, text } = JSON.parse(plaintext));
+            } catch {
+                continue;
+            }
+
+            if (from === this.peerId) continue;
+
+            this.saveMessage(new Message(text, false));
+            this.deleteQueueMessage(entry.id);
+        }
+    }
+
+    private async storeQueueMessage(text: string): Promise<void> {
+        if (!this.code || !this.messageKey) return;
+
+        const payload = await CryptoHelper.encrypt(
+            this.messageKey,
+            JSON.stringify({ from: this.peerId, text })
+        );
+
+        await fetch("/api/messages/" + this.code, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: ChatHelper.generateId(), ciphertext: payload })
+        });
+    }
+
+    private async deleteQueueMessage(id: string): Promise<void> {
+        if (!this.code) return;
+
+        await fetch("/api/messages/" + this.code + "/" + id, {
+            method: 'DELETE'
+        });
+    }
+
     private sendMessage = (event) => {
         event.preventDefault();
         const message = event.target.elements.userInput.value;
         event.target.reset();
 
         this.saveMessage(new Message(message, true));
-        this.state.connection.send(message);
+
+        if (this.state.connection) {
+            this.state.connection.send(message);
+        } else if (this.code) {
+            this.storeQueueMessage(message);
+        }
     }
 
     private handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
