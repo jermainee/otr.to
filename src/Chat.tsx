@@ -60,6 +60,7 @@ export default class Chat extends React.Component<IChatProps, IChatState> {
     };
 
     private fileInputRef = React.createRef<HTMLInputElement>();
+    private messageAreaRef = React.createRef<HTMLDivElement>();
     private readonly CHUNK_SIZE = 16384; // 16KB chunks
 
     private code: string | null = null;
@@ -166,8 +167,11 @@ export default class Chat extends React.Component<IChatProps, IChatState> {
         return (
             <div style={{ marginBottom: '4rem'}}>
                 <div className="container">
-                    <Messages messages={this.state.messages}/>
-                    {this.renderFileTransfers()}
+                    <div ref={this.messageAreaRef}
+                         style={{ height: '55vh', overflowY: 'auto', marginTop: '1rem' }}>
+                        <Messages messages={this.state.messages}/>
+                        {this.renderFileTransfers()}
+                    </div>
                 </div>
 
                 {messageInput}
@@ -486,6 +490,7 @@ export default class Chat extends React.Component<IChatProps, IChatState> {
             this.state.connection.send(message);
         } else if (this.code) {
             this.storeQueueMessage(message);
+            this.saveMessage(new Message('Message saved — it will be delivered when the other person connects', true, true));
         }
     }
 
@@ -642,7 +647,9 @@ export default class Chat extends React.Component<IChatProps, IChatState> {
         });
 
         setTimeout(() => {
-            document.querySelector('html').scrollTop = 999999999;
+            if (this.messageAreaRef.current) {
+                this.messageAreaRef.current.scrollTop = this.messageAreaRef.current.scrollHeight;
+            }
         }, 1);
     }
 }

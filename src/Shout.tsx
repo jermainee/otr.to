@@ -41,6 +41,7 @@ export default class Shout extends React.Component<IShoutProps, IShoutState> {
     private readonly room: string;
     private readonly connections = new Map<string, DataConnection>();
     private readonly connecting = new Set<string>();
+    private readonly messageAreaRef = React.createRef<HTMLDivElement>();
 
     private peer: Peer;
     private ws: WebSocket;
@@ -81,7 +82,10 @@ export default class Shout extends React.Component<IShoutProps, IShoutState> {
                             {this.state.connected ? this.state.memberCount + ' member(s) online' : 'Connecting…'}
                         </div>
                     </div>
-                    <Messages messages={this.state.messages}/>
+                    <div ref={this.messageAreaRef}
+                         style={{ height: '55vh', overflowY: 'auto' }}>
+                        <Messages messages={this.state.messages}/>
+                    </div>
                 </div>
 
                 <div className="container" style={{ position: 'fixed', bottom: 0, right: '50%', transform: 'translateX(50%)', width: '100%', padding: '.5rem' }}>
@@ -271,7 +275,9 @@ export default class Shout extends React.Component<IShoutProps, IShoutState> {
         });
 
         setTimeout(() => {
-            document.querySelector('html').scrollTop = 999999999;
+            if (this.messageAreaRef.current) {
+                this.messageAreaRef.current.scrollTop = this.messageAreaRef.current.scrollHeight;
+            }
         }, 1);
     }
 }
