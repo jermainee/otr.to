@@ -12,7 +12,7 @@ export default class ChatHelper
         return Array.from(array, byte => byte.toString(36)).join('').substring(0, 22);
     }
 
-    public static generateCode(length: number = 6): string
+    public static generateCode(length: number = 8): string
     {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -28,5 +28,14 @@ export default class ChatHelper
         window.crypto.getRandomValues(array);
 
         return Array.from(array, n => chars[n % chars.length]).join('');
+    }
+
+    public static generateId(): string
+    {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID();
+        }
+
+        return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
     }
 }
