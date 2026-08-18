@@ -12,11 +12,27 @@ const server = http.createServer(app);
 
 app.use(express.json({ limit: "10mb" }));
 
+const peerWss = new WebSocketServer({ noServer: true });
+const shoutWss = new WebSocketServer({ noServer: true });
+
 const peerServer = ExpressPeerServer(server, {
     debug: true,
     path: "/peerjs",
+    createWebSocketServer: () => peerWss,
 });
 app.use("/peerjs", peerServer);
+
+server.on("upgrade", (req, socket, head) => {
+    const pathname = new URL(req.url, "http://localhost").pathname;
+
+    if (pathname === "/peerjs/peerjs") {
+        peerWss.handleUpgrade(req, socket, head, ws => peerWss.emit("connection", ws, req));
+    } else if (pathname === "/shout") {
+        shoutWss.handleUpgrade(req, socket, head, ws => shoutWss.emit("connection", ws, req));
+    } else {
+        socket.destroy();
+    }
+});
 
 app.get("/api/health", (_req, res) => {
     res.json({ ok: true, uptime: process.uptime() });
@@ -72,11 +88,16 @@ app.delete("/api/messages/:code", (_req, res) => {
 const publicDir = path.resolve(__dirname, "..", "public");
 app.use(express.static(publicDir));
 
-app.get(/^\/(c\/[A-Z2-9]+|shout|)\/?$/, (_req, res) => {
+app.get(/^\/(c\/[A-Z2-9]+|shout(\/[A-Za-z0-9-]+)?|)\/?$/, (_req, res) => {
     res.sendFile(path.join(publicDir, "index.html"));
 });
 
-const wss = new WebSocketServer({ server, path: "/shout" });
+app.get("/api/rooms/:room/members", (req, res) => {
+    const members = Array.from(rooms.get(req.params.room) || []).map(ws => ws.peerId).filter(Boolean);
+    res.json({ members });
+});
+
+const wss = shoutWss;
 
 const rooms = new Map();
 
@@ -106,6 +127,7 @@ wss.on("connection", ws => {
         if (msg.type === "join" && msg.room) {
             room = msg.room;
             peerId = msg.peerId;
+            ws.peerId = msg.peerId;
             if (!rooms.has(room)) rooms.set(room, new Set());
             rooms.get(room).add(ws);
             broadcast(room, { type: "presence", room, action: "join", peerId, members: count(room) });
