@@ -36,10 +36,12 @@ describe('Chat served from the onion service', () => {
     });
 
     it('does not advertise the onion service to visitors already on it', () => {
-        render(<Chat/>);
+        const {container} = render(<Chat/>);
 
         expect(screen.queryByText('Also available via Tor')).not.toBeInTheDocument();
-        expect(screen.queryByAltText('Copy onion address')).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: ONION_ORIGIN})).not.toBeInTheDocument();
+        // Only the rule that already sat above the GitHub button.
+        expect(container.querySelectorAll('hr')).toHaveLength(1);
     });
 
     it('connects to the peer id from an onion link that was opened', () => {

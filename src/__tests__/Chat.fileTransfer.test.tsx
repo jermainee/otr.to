@@ -210,5 +210,8 @@ describe('Sending a file', () => {
         await send(new File(['x'], 'notes.txt', {type: 'text/plain'}));
 
         expect(fileInput().value).toBe('');
+
+        // The chunks are read asynchronously; let them finish before unmounting.
+        await waitFor(() => expect(screen.getByText('✅ File sent: notes.txt')).toBeInTheDocument());
     });
 });
