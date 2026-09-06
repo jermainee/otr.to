@@ -2,3 +2,4 @@ node_modules/
 public/dist/
 .idea/
 *.DS_Store
+coverage/
