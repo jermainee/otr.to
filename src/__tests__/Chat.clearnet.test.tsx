@@ -51,22 +51,19 @@ describe('Chat on the clearnet domain', () => {
         expect(screen.getAllByText('Copied!')).toHaveLength(1);
     });
 
-    it('advertises the onion service', () => {
+    it('advertises the onion service as a plain link', () => {
         render(<Chat/>);
 
         expect(screen.getByText('Also available via Tor')).toBeInTheDocument();
-        expect(screen.getByDisplayValue(ONION_ADDRESS)).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: ONION_ADDRESS})).toHaveAttribute('href', ONION_ADDRESS);
         expect(screen.getByText('Tor Browser')).toHaveAttribute(
             'href', 'https://www.torproject.org/download/');
     });
 
-    it('copies the onion address, not the chat link', () => {
-        render(<Chat/>);
+    it('separates the Tor section from the GitHub button', () => {
+        const {container} = render(<Chat/>);
 
-        fireEvent.click(screen.getByAltText('Copy onion address'));
-
-        expect(copy).toHaveBeenCalledTimes(1);
-        expect(copy.mock.calls[0][0]).toBe(ONION_ADDRESS);
-        expect(screen.getAllByText('Copied!')).toHaveLength(1);
+        expect(container.querySelectorAll('hr')).toHaveLength(2);
+        expect(screen.getByLabelText(/Star .* on GitHub/).previousElementSibling.tagName).toBe('HR');
     });
 });

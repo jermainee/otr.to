@@ -11,7 +11,6 @@ interface IChatState {
     connection: Peer.DataConnection|null;
     showLink: boolean;
     wasCopied: boolean;
-    wasOnionCopied: boolean;
     fileTransfers: Map<string, FileTransfer>;
 }
 
@@ -61,7 +60,6 @@ export default class Chat extends React.Component<{}, IChatState> {
             connection: null,
             showLink: false,
             wasCopied: false,
-            wasOnionCopied: false,
             fileTransfers: new Map(),
         };
     }
@@ -239,33 +237,13 @@ export default class Chat extends React.Component<{}, IChatState> {
 
                         {!isOnionHost && (<>
                         <h2 className="subtitle is-4">Also available via Tor</h2>
-                        <p style={{marginBottom: "1rem"}}>For even more privacy you can reach otr.to as a Tor onion
-                            service. Open the following address in the <a href="https://www.torproject.org/download/"
-                            target="_blank" rel="noopener noreferrer">Tor Browser</a>:</p>
+                        <p>For even more privacy you can reach otr.to as a Tor onion service. Open the following
+                            address in the <a href="https://www.torproject.org/download/" target="_blank"
+                            rel="noopener noreferrer">Tor Browser</a>:</p>
 
-                        <div className="columns is-gapless is-mobile" style={{marginBottom: "1.5rem"}}>
-                            <div className="column">
-                                <input className="input" value={onionLink} readOnly={true}
-                                       style={{borderRadius: '4px 0 0 4px', fontFamily: 'monospace'}}/>
-                            </div>
-                            <div className="column is-narrow">
-                                <CopyToClipboard text={onionLink}
-                                                 onCopy={() => this.setState({wasOnionCopied: true})}>
-                                    {this.state.wasOnionCopied ? (
-                                        <button className="button is-primary has-text-weight-bold"
-                                                style={{borderRadius: '0 4px 4px 0'}}>
-                                            <span>Copied!</span>
-                                        </button>
-                                    ) : (
-                                        <button className="button is-primary" style={{borderRadius: '0 4px 4px 0'}}>
-                                            <span className="icon is-marginless"><img src="/images/icons/copy.svg"
-                                                                                      alt="Copy onion address"/></span>
-                                            <span className="is-hidden">Copy onion address</span>
-                                        </button>
-                                    )}
-                                </CopyToClipboard>
-                            </div>
-                        </div>
+                        <p><a href={onionLink} style={{wordBreak: 'break-all'}}>{onionLink}</a></p>
+
+                        <hr/>
                         </>)}
 
                         <a className="github-button" href="https://github.com/jermainee/otr.to" data-size="large"
