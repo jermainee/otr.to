@@ -11,7 +11,13 @@ interface IChatState {
     connection: Peer.DataConnection|null;
     showLink: boolean;
     wasCopied: boolean;
+    alias: string;
     fileTransfers: Map<string, FileTransfer>;
+}
+
+interface AliasMessage {
+    type: 'peer-id';
+    realId: string;
 }
 
 interface FileTransfer {
@@ -52,6 +58,9 @@ export default class Chat extends React.Component<{}, IChatState> {
 
     private fileInputRef = React.createRef<HTMLInputElement>();
     private readonly CHUNK_SIZE = 16384; // 16KB chunks
+    private readonly ALIAS_LENGTH = 6;
+    private readonly CONNECT_TIMEOUT_MS = 6 * 1000; // 6 seconds
+    private aliasPeer: Peer|null = null;
 
     public constructor(props: {}) {
         super(props);
@@ -60,6 +69,7 @@ export default class Chat extends React.Component<{}, IChatState> {
             connection: null,
             showLink: false,
             wasCopied: false,
+            alias: '',
             fileTransfers: new Map(),
         };
     }
@@ -67,11 +77,18 @@ export default class Chat extends React.Component<{}, IChatState> {
     public componentDidMount() {
         const targetPeerId = window.top.location.hash.substr(1);
 
-        if (targetPeerId !== '') {
+        if (targetPeerId.length === this.ALIAS_LENGTH) {
+            this.joinByAlias(targetPeerId);
+        }
+        else if (targetPeerId !== '') {
             this.connect(new Peer(this.peerId, { config: this.config }), targetPeerId);
         } else {
             this.createPeer();
         }
+    }
+
+    public componentWillUnmount() {
+        this.expireAlias();
     }
 
     public render() {
@@ -149,8 +166,14 @@ export default class Chat extends React.Component<{}, IChatState> {
                 <div className={(this.state.showLink ? 'container content' : 'is-hidden')}>
                     <div style={{padding: '1rem'}}>
                         <h1 className="title is-4">Start chatting</h1>
-                        <div style={{marginBottom: "1rem"}}>To start a chat just send the following link to the desired
-                            person:
+                        <div style={{marginBottom: "1rem"}}>To start a chat, have the desired person enter your code or send them the link below:
+                        </div>
+
+                        <div className="has-text-centered" style={{marginBottom: "1rem"}}>
+                            <span className="title is-2 has-text-primary"
+                                  style={{letterSpacing: "0.3rem", fontFamily: "monospace"}}>
+                                {this.state.alias || '······'}
+                            </span>
                         </div>
 
                         <div className="columns is-gapless is-mobile">
@@ -166,7 +189,8 @@ export default class Chat extends React.Component<{}, IChatState> {
                                             <span>Copied!</span>
                                         </button>
                                     ) : (
-                                        <button className="button is-primary" style={{borderRadius: '0 4px 4px 0'}}>
+                                        <button className="button is-primary"
+                                                style={{borderRadius: '0 4px 4px 0'}}>
                                             <span className="icon is-marginless"><img src="/images/icons/copy.svg"
                                                                                       alt="Copy link"/></span>
                                             <span className="is-hidden">Copy link</span>
@@ -175,6 +199,30 @@ export default class Chat extends React.Component<{}, IChatState> {
                                 </CopyToClipboard>
                             </div>
                         </div>
+
+                        <h2 className="subtitle is-5">Have a code?</h2>
+                        <form onSubmit={this.joinSubmit}>
+                            <div className="columns is-gapless is-mobile" style={{marginBottom: "1rem"}}>
+                                <div className="column">
+                                    <input className="input"
+                                           name="aliasInput"
+                                           type="text"
+                                           placeholder="Enter a code to connect"
+                                           autoComplete="off"
+                                           autoCapitalize="off"
+                                           autoCorrect="off"
+                                           spellCheck="false"
+                                           style={{borderRadius: '4px 0 0 4px'}}
+                                    />
+                                </div>
+                                <div className="column is-narrow">
+                                    <button type="submit" className="button is-primary has-text-weight-bold"
+                                            style={{borderRadius: '0 4px 4px 0'}}>
+                                        Connect
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
 
                         <h2 className="subtitle is-5">Share link</h2>
                         <div className="columns">
@@ -299,20 +347,26 @@ export default class Chat extends React.Component<{}, IChatState> {
         const peer = new Peer(this.peerId, {config: this.config});
         this.setState({showLink: true});
 
+        // Expose a short alias once the peer is live.
+        peer.on('open', () => this.registerAlias());
+
         peer.on('connection', connection => {
-            console.log('open', peer.connections);
+            connection.on('open', () => {
+                console.log('open', peer.connections);
 
-            this.setState({showLink: false});
+                this.expireAlias();
+                this.setState({alias: '', showLink: false});
 
-            this.saveMessage(new Message('Connected to Peer', true, true));
-            this.setState({connection});
+                this.saveMessage(new Message('Connected to Peer', true, true));
+                this.setState({connection});
 
-            connection.on('data', (data: string | FileMessage) => {
-                if (typeof data === 'string') {
-                    this.saveMessage(new Message(data, false));
-                } else {
-                    this.handleFileMessage(data);
-                }
+                connection.on('data', (data: string | FileMessage) => {
+                    if (typeof data === 'string') {
+                        this.saveMessage(new Message(data, false));
+                    } else {
+                        this.handleFileMessage(data);
+                    }
+                });
             });
 
             connection.on('close', () => this.saveMessage(new Message('Peer has left the chat', true, true)));
@@ -323,12 +377,68 @@ export default class Chat extends React.Component<{}, IChatState> {
         return peer;
     }
 
+    // Register the alias peer (retry on id collision).
+    private registerAlias(): void {
+        const alias = ChatHelper.generateAlias(this.ALIAS_LENGTH);
+        const aliasPeer = new Peer(alias, {config: this.config});
+        this.aliasPeer = aliasPeer;
+
+        aliasPeer.on('open', () => {
+            if (this.aliasPeer !== aliasPeer) {
+                return;
+            }
+            this.setState({alias});
+        });
+
+        aliasPeer.on('connection', connection => {
+            connection.on('open', () => {
+                const message: AliasMessage = {type: 'peer-id', realId: this.peerId};
+                connection.send(message);
+            });
+        });
+
+        aliasPeer.on('error', error => {
+            if ((error as any).type === 'unavailable-id') {
+                aliasPeer.destroy();
+                if (this.aliasPeer === aliasPeer) {
+                    this.aliasPeer = null;
+                    this.registerAlias();
+                }
+                return;
+            }
+
+            console.log('aliasPeer error', error);
+        });
+    }
+
+    private expireAlias(): void {
+        const aliasPeer = this.aliasPeer;
+        this.aliasPeer = null;
+        aliasPeer?.destroy();
+    }
+
     private connect(peer: Peer, targetPeerId: string): void {
+        let settled = false;
+        let timeoutId: number;
+
+        const fail = (reason: string) => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            clearTimeout(timeoutId);
+            this.saveMessage(new Message(reason, true, true));
+            window.location.href = '/';
+        };
+
         peer.on('open', id => {
             this.saveMessage(new Message('Created Peer: ' + id, true, true));
 
             const connection = peer.connect(targetPeerId);
             connection.on('open', () => {
+                settled = true;
+                clearTimeout(timeoutId);
+
                 this.saveMessage(new Message('Connected to Peer: ' + targetPeerId, true, true));
                 this.setState({ connection });
 
@@ -341,15 +451,76 @@ export default class Chat extends React.Component<{}, IChatState> {
                 });
             });
 
-            setTimeout(() => {
-                if (this.state.connection === null) {
-                    this.saveMessage(new Message('Peer not found', true, true));
-                    window.location.href = '/';
-                }
-            }, 6000);
+            connection.on('error', () => fail('Could not connect to peer'));
+
+            timeoutId = window.setTimeout(() => fail('Peer not found'), this.CONNECT_TIMEOUT_MS);
 
             connection.on('close', () => this.saveMessage(new Message('Peer has left the chat', true, true)));
         });
+
+        peer.on('error', error => {
+            if ((error as any).type === 'peer-unavailable') {
+                fail('Peer not found');
+                return;
+            }
+
+            console.log('error', error);
+        });
+    }
+
+    // Resolve the alias to the real peer id, then reconnect via the direct path.
+    private joinByAlias(alias: string): void {
+        const peer = new Peer(this.peerId, {config: this.config});
+
+        let settled = false;
+        let timeoutId: number;
+
+        const fail = (reason: string) => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            clearTimeout(timeoutId);
+            this.saveMessage(new Message(reason, true, true));
+            window.location.href = '/';
+        };
+
+        peer.on('open', () => {
+            const aliasConnection = peer.connect(alias);
+
+            aliasConnection.on('data', (data: AliasMessage) => {
+                if (data && data.type === 'peer-id') {
+                    settled = true;
+                    clearTimeout(timeoutId);
+                    window.location.hash = data.realId;
+                    window.location.reload();
+                }
+            });
+
+            aliasConnection.on('error', () => fail('Peer not found'));
+
+            timeoutId = window.setTimeout(() => fail('Peer not found'), this.CONNECT_TIMEOUT_MS);
+        });
+
+        peer.on('error', error => {
+            if ((error as any).type === 'peer-unavailable') {
+                fail('Peer not found');
+                return;
+            }
+
+            console.log('error', error);
+        });
+    }
+
+    private joinSubmit = (event) => {
+        event.preventDefault();
+        const alias = event.target.elements.aliasInput.value.trim();
+        if (alias === '') {
+            return;
+        }
+
+        window.location.href = '/#' + alias;
+        window.location.reload();
     }
 
     private sendMessage = (event) => {
