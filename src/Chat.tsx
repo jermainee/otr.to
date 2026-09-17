@@ -48,8 +48,6 @@ export default class Chat extends React.Component<{}, IChatState> {
         ]
     };
 
-    private readonly onionAddress = "http://xady4v2muvyix5f4k3pu3tdkkti7a7qanqpoyxbgyflfp6jk7aocgqqd.onion";
-
     private fileInputRef = React.createRef<HTMLInputElement>();
     private readonly CHUNK_SIZE = 16384; // 16KB chunks
 
@@ -75,9 +73,7 @@ export default class Chat extends React.Component<{}, IChatState> {
     }
 
     public render() {
-        const isOnionHost = window.location.hostname.endsWith(".onion");
-        const link = (isOnionHost ? window.location.origin : "https://otr.to") + "/#" + this.peerId;
-        const onionLink = this.onionAddress;
+        const link = "https://otr.to/#" + this.peerId;
         const messageInput = this.state.connection ? (
             <div className="container" style={{ position: 'fixed', bottom: 0, right: '50%', transform: 'translateX(50%)', width: '100%', padding: '.5rem' }}>
                 <form onSubmit={this.sendMessage}>
@@ -234,17 +230,6 @@ export default class Chat extends React.Component<{}, IChatState> {
                         </div>
 
                         <hr/>
-
-                        {!isOnionHost && (<>
-                        <h2 className="subtitle is-4">Also available via Tor</h2>
-                        <p>For even more privacy you can reach otr.to as a Tor onion service. Open the following
-                            address in the <a href="https://www.torproject.org/download/" target="_blank"
-                            rel="noopener noreferrer">Tor Browser</a>:</p>
-
-                        <p><a href={onionLink} style={{wordBreak: 'break-all'}}>{onionLink}</a></p>
-
-                        <hr/>
-                        </>)}
 
                         <a className="github-button" href="https://github.com/jermainee/otr.to" data-size="large"
                            data-show-count="true" aria-label="Star jermainee/nachricht.co on GitHub">Star</a>
