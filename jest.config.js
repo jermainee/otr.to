@@ -3,6 +3,10 @@ module.exports = {
     testEnvironment: 'jsdom',
     roots: ['<rootDir>/src'],
     setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+    transform: {
+        // tsconfig.json emits ES modules for webpack; jest runs CommonJS.
+        '^.+\\.tsx?$': ['ts-jest', {tsconfig: {module: 'commonjs', moduleResolution: 'node10'}}],
+    },
     collectCoverageFrom: [
         'src/**/*.{ts,tsx}',
         '!src/__mocks__/**',

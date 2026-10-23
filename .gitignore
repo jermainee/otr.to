@@ -3,3 +3,5 @@ public/dist/
 .idea/
 *.DS_Store
 coverage/
+/test-results/
+/playwright-report/

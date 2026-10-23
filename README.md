@@ -19,18 +19,21 @@
 
 In the project directory, you can run:
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+### `npm run dev`
 
-### `npm run watch`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Builds the bundle in development mode and rebuilds it on every change.
 
 ### `npm test`
 
 Runs the Jest test suite once.\
 Use `npm run test:watch` while editing, or `npm run test:coverage` for a coverage report.
+
+### `npm run test:e2e`
+
+Runs the Playwright suite against the built site: it drives two browser tabs
+through a real chat over WebRTC, messages and file transfers included. Only the
+PeerJS signalling server is stubbed, so the suite needs no network.\
+The browser comes from `npx playwright install chromium`, which is a one-off.
 
 ### `npm run build`
 
