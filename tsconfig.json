@@ -1,9 +1,19 @@
 {
     "compilerOptions": {
         "target": "es6",
+        // peerjs' types reach for SharedArrayBuffer, which is es2017.
+        "lib": ["es2017", "dom"],
         "jsx": "react",
-        "module": "commonjs",
-        "esModuleInterop": true
+        // webpack does the bundling, so emit modules and let it resolve them
+        // the way it does: react-router's types only ship an exports map.
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "esModuleInterop": true,
+        // TypeScript 6 does not pull @types/node in on its own any more.
+        "types": ["node", "jest"],
+        // TypeScript 6 turns strict on by default; this codebase was written
+        // without it, so keep the old behaviour until it is ported over.
+        "strict": false
     },
     "exclude": [
         "node_modules"

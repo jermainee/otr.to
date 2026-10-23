@@ -1,14 +1,13 @@
 import * as React from "react";
 import ChatHelper from "./Service/ChatHelper";
-import Peer from "peerjs";
+import Peer, {DataConnection} from "peerjs";
 import Message from "./Struct/Message";
 import Messages from "./Messages";
 import {CopyToClipboard} from 'react-copy-to-clipboard';
 
 interface IChatState {
     messages: Message[];
-    // @ts-ignore
-    connection: Peer.DataConnection|null;
+    connection: DataConnection|null;
     showLink: boolean;
     wasCopied: boolean;
     fileTransfers: Map<string, FileTransfer>;
@@ -163,8 +162,8 @@ export default class Chat extends React.Component<{}, IChatState> {
                                         </button>
                                     ) : (
                                         <button className="button is-primary" style={{borderRadius: '0 4px 4px 0'}}>
-                                            <span className="icon is-marginless"><img src="/images/icons/copy.svg"
-                                                                                      alt="Copy link"/></span>
+                                            <span className="icon m-0"><img src="/images/icons/copy.svg"
+                                                                            alt="Copy link"/></span>
                                             <span className="is-hidden">Copy link</span>
                                         </button>
                                     )}

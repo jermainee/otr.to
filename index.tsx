@@ -1,16 +1,15 @@
 import * as React from "react";
-import * as ReactDOM from "react-dom";
-import { BrowserRouter as Router, Route } from "react-router-dom";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Chat from "./src/Chat";
 
 import "bulma";
 import "./github-button.js";
 
-ReactDOM.render(
+createRoot(document.getElementById("root")).render(
     <Router>
-        <div>
-            <Route path="/" exact component={Chat} />
-        </div>
-    </Router>,
-    document.getElementById("root")
+        <Routes>
+            <Route path="/" element={<Chat />} />
+        </Routes>
+    </Router>
 );
