@@ -30,7 +30,7 @@ test.describe('Waiting for someone to join', () => {
         const host = await openAsHost(context);
 
         const link = await shareLinkInput(host).inputValue();
-        await host.getByAltText('Copy link').click();
+        await host.getByRole('button', {name: 'Copy link'}).click();
 
         await expect(host.getByText('Copied!')).toBeVisible();
         expect(await host.evaluate(() => navigator.clipboard.readText())).toBe(link);
@@ -42,6 +42,7 @@ test.describe('Waiting for someone to join', () => {
         await expect(host.getByRole('heading', {name: 'How it works'})).toBeVisible();
         await expect(host.getByText('Peer to peer communication')).toBeVisible();
         await expect(host.getByText('No chat history')).toBeVisible();
-        await expect(host.getByRole('link', {name: /Star .* on GitHub/})).toBeVisible();
+        await expect(host.getByRole('link', {name: 'View on GitHub'}))
+            .toHaveAttribute('href', 'https://github.com/jermainee/otr.to');
     });
 });

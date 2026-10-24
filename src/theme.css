@@ -1,0 +1,10 @@
+/*
+ * Bulma 1 writes dark text on the turquoise in both colour schemes. Keep the
+ * white text it used to have, and the dark one only in dark mode, where it
+ * reads better. Buttons, the navbar and the message tags all follow this.
+ */
+@media (prefers-color-scheme: light) {
+    :root {
+        --bulma-primary-invert-l: 100%;
+    }
+}

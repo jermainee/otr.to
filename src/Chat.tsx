@@ -3,6 +3,7 @@ import ChatHelper from "./Service/ChatHelper";
 import Peer, {DataConnection} from "peerjs";
 import Message from "./Struct/Message";
 import Messages from "./Messages";
+import {CopyIcon, GitHubIcon, TelegramIcon, WhatsAppIcon} from "./Icons";
 import {CopyToClipboard} from 'react-copy-to-clipboard';
 
 interface IChatState {
@@ -142,7 +143,7 @@ export default class Chat extends React.Component<{}, IChatState> {
                 {messageInput}
 
                 <div className={(this.state.showLink ? 'container content' : 'is-hidden')}>
-                    <div style={{padding: '1rem'}}>
+                    <div style={{padding: '2rem 1rem 1rem'}}>
                         <h1 className="title is-4">Start chatting</h1>
                         <div style={{marginBottom: "1rem"}}>To start a chat just send the following link to the desired
                             person:
@@ -162,9 +163,8 @@ export default class Chat extends React.Component<{}, IChatState> {
                                         </button>
                                     ) : (
                                         <button className="button is-primary" style={{borderRadius: '0 4px 4px 0'}}>
-                                            <span className="icon m-0"><img src="/images/icons/copy.svg"
-                                                                            alt="Copy link"/></span>
-                                            <span className="is-hidden">Copy link</span>
+                                            <span className="icon m-0"><CopyIcon/></span>
+                                            <span className="is-sr-only">Copy link</span>
                                         </button>
                                     )}
                                 </CopyToClipboard>
@@ -178,7 +178,7 @@ export default class Chat extends React.Component<{}, IChatState> {
                                    className="button is-primary is-fullwidth has-text-weight-bold"
                                    target="_blank"
                                 >
-                                    <span className="icon"><img src="/images/icons/telegram.svg" alt="Telegram"/></span>
+                                    <span className="icon"><TelegramIcon/></span>
                                     <span>Telegram</span>
                                 </a>
                             </div>
@@ -188,7 +188,7 @@ export default class Chat extends React.Component<{}, IChatState> {
                                    className="button is-primary is-fullwidth has-text-weight-bold"
                                    target="_blank"
                                 >
-                                    <span className="icon"><img src="/images/icons/whatsapp.svg" alt="WhatsApp"/></span>
+                                    <span className="icon"><WhatsAppIcon/></span>
                                     <span>WhatsApp</span>
                                 </a>
                             </div>
@@ -230,8 +230,10 @@ export default class Chat extends React.Component<{}, IChatState> {
 
                         <hr/>
 
-                        <a className="github-button" href="https://github.com/jermainee/otr.to" data-size="large"
-                           data-show-count="true" aria-label="Star jermainee/nachricht.co on GitHub">Star</a>
+                        <a href="https://github.com/jermainee/otr.to" className="button" target="_blank">
+                            <span className="icon mr-2"><GitHubIcon/></span>
+                            <span>View on GitHub</span>
+                        </a>
                     </div>
                 </div>
             </div>
