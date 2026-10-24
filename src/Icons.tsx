@@ -16,8 +16,8 @@ const Icon = ({viewBox, children}: IIconProps) => (
     </svg>
 );
 
-// Attach, send, check and file come from Material Icons, like the copy icon,
-// so the interface icons share one drawing style.
+// Attach, send, check, file and download come from Material Icons, like the
+// copy icon, so the interface icons share one drawing style.
 
 export const AttachIcon = () => (
     <Icon viewBox="0 0 24 24">
@@ -40,6 +40,12 @@ export const CheckIcon = () => (
 export const FileIcon = () => (
     <Icon viewBox="0 0 24 24">
         <path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"/>
+    </Icon>
+);
+
+export const DownloadIcon = () => (
+    <Icon viewBox="0 0 24 24">
+        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
     </Icon>
 );
 

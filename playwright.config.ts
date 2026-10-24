@@ -15,6 +15,9 @@ export default defineConfig({
         trace: 'retain-on-failure',
         // The share link offers a copy button, and reading it back needs this.
         permissions: ['clipboard-read', 'clipboard-write'],
+        // What the service worker answers never reaches page.route, so it
+        // stays out of the way; pwa.spec.ts turns it back on.
+        serviceWorkers: 'block',
     },
     projects: [
         {

@@ -6,6 +6,7 @@
   "scripts": {
     "build": "webpack --mode='production'",
     "dev": "webpack --mode='development' --watch",
+    "icons": "node scripts/icons.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
