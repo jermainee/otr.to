@@ -32,15 +32,31 @@
     margin-bottom: 1.5rem;
 }
 
+/* A plain list on a hairline each, two abreast where there is room. */
 .start-features {
     display: grid;
-    gap: 1rem 2.5rem;
+    gap: 1.5rem 2.5rem;
 }
 
 @media (min-width: 769px) {
     .start-features {
         grid-template-columns: 1fr 1fr;
     }
+}
+
+.start-features li {
+    padding-top: 1rem;
+    border-top: 1px solid var(--bulma-border-weak);
+}
+
+.start-feature-title {
+    margin-bottom: .25rem;
+    font-weight: 600;
+    color: var(--bulma-text-strong);
+}
+
+.start-features p {
+    text-wrap: pretty;
 }
 
 .start-about hr {

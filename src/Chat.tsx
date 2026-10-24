@@ -35,6 +35,34 @@ interface IChatState {
 /** How long the copy button confirms the copy. */
 const COPIED_FOR = 2500;
 
+/** What the start page says otr.to does, each in a title and a sentence or two. */
+const FEATURES = [
+    {
+        title: 'Direct connection',
+        text: 'Messages and files go straight from one browser to the others. No server keeps a copy of the conversation.',
+    },
+    {
+        title: 'End-to-end encrypted',
+        text: 'The key travels inside the link and never reaches a server. Only people who have the link can read along.',
+    },
+    {
+        title: 'Group chats',
+        text: 'Send the link to several people and talk all together. Short names like “Calm Otter” show who wrote what, and anyone in the chat can invite more.',
+    },
+    {
+        title: 'File sharing',
+        text: 'Send photos, documents and anything else to everyone in the chat, encrypted like your messages.',
+    },
+    {
+        title: 'No sign-up',
+        text: 'No account, no name, no phone number, and nothing to install. It works in any modern browser, on phones too.',
+    },
+    {
+        title: 'No history',
+        text: 'The conversation lives only in your open tab. Close it, and it’s gone.',
+    },
+];
+
 export default class Chat extends React.Component<{}, IChatState> {
     private readonly peerId = ChatHelper.generatePeerId();
     private readonly config = {
@@ -137,8 +165,8 @@ export default class Chat extends React.Component<{}, IChatState> {
                 <section className="start-invite" aria-labelledby="start-title">
                     <h1 id="start-title" className="title is-3">Start a private chat</h1>
                     <p className="start-lead">
-                        Send this link to the people you want to chat with, one or several. The chat starts as
-                        soon as someone opens it.
+                        Send this link to the people you want to chat with. The chat starts as soon as someone
+                        opens it, and anyone who has the link can join.
                     </p>
 
                     <div className="field has-addons start-link">
@@ -196,35 +224,21 @@ export default class Chat extends React.Component<{}, IChatState> {
                 </section>
 
                 <section className="start-about" aria-labelledby="about-title">
-                    <h2 id="about-title" className="title is-5">How it works</h2>
-                    <p className="start-about-intro">We believe that everyone has the right to communicate privately. That’s why we provide
-                        otr.to, a tool that allows you to chat P2P. That is, with a direct connection between you
-                        and the people you talk to.</p>
+                    <h2 id="about-title" className="title is-5">Features</h2>
+                    <p className="start-about-intro">
+                        We believe that everyone has the right to communicate privately. otr.to connects your
+                        browser straight to the browsers of the people you invite, and nothing in between can
+                        read along.
+                    </p>
 
-                    <div className="start-features">
-                        <p>
-                            <strong>Peer to peer communication</strong> You communicate directly, no logs saved on
-                            any servers
-                        </p>
-                        <p>
-                            <strong>End-to-end encrypted</strong> The key is part of the link, so only the people
-                            you send it to can read along
-                        </p>
-                        <p>
-                            <strong>Group chats</strong> Send the link to several people and talk all together. The
-                            chat goes on as long as two of you are in it
-                        </p>
-                        <p>
-                            <strong>Absolutely anonymous</strong> and registration free
-                        </p>
-                        <p>
-                            <strong>Browser based</strong> You don’t need to install any software and neither ask
-                            somebody else to do it, too
-                        </p>
-                        <p>
-                            <strong>No chat history</strong> It’s all deleted with closing your browser tab
-                        </p>
-                    </div>
+                    <ul className="start-features">
+                        {FEATURES.map(feature => (
+                            <li key={feature.title}>
+                                <h3 className="start-feature-title">{feature.title}</h3>
+                                <p>{feature.text}</p>
+                            </li>
+                        ))}
+                    </ul>
 
                     <hr/>
 

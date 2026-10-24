@@ -47,9 +47,9 @@ test.describe('Waiting for someone to join', () => {
     test('explains itself while there is nothing else to do', async ({context}) => {
         const host = await openAsHost(context);
 
-        await expect(host.getByRole('heading', {name: 'How it works'})).toBeVisible();
-        await expect(host.getByText('Peer to peer communication')).toBeVisible();
-        await expect(host.getByText('No chat history')).toBeVisible();
+        await expect(host.getByRole('heading', {name: 'Features'})).toBeVisible();
+        await expect(host.getByRole('heading', {name: 'End-to-end encrypted'})).toBeVisible();
+        await expect(host.getByRole('heading', {name: 'Group chats'})).toBeVisible();
         await expect(host.getByRole('link', {name: 'View on GitHub'}))
             .toHaveAttribute('href', 'https://github.com/jermainee/otr.to');
     });

@@ -68,6 +68,29 @@ describe('The share link', () => {
         }
     });
 
+    it('comes with what otr.to does, as a list of features', () => {
+        render(<Chat/>);
+
+        const features = screen.getByRole('heading', {name: 'Features'}).parentElement.querySelector('ul');
+        const titles = Array.from(features.querySelectorAll('li h3'), title => title.textContent);
+
+        expect(titles).toEqual([
+            'Direct connection',
+            'End-to-end encrypted',
+            'Group chats',
+            'File sharing',
+            'No sign-up',
+            'No history',
+        ]);
+        features.querySelectorAll('li').forEach(item => expect(item.querySelector('p').textContent).toMatch(/\.$/));
+    });
+
+    it('tells that anyone with the link can join', () => {
+        render(<Chat/>);
+
+        expect(screen.getByText(/anyone who has the link can join/)).toBeInTheDocument();
+    });
+
     it('sits above a single rule and a button to the repository', () => {
         const {container} = render(<Chat/>);
 
