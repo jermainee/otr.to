@@ -57,3 +57,8 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # The TURN relay (turn/); deploy-turn.yml runs the same before every deploy.
+  turn:
+    name: TURN relay
+    uses: ./.github/workflows/turn-tests.yml

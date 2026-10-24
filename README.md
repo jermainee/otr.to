@@ -74,6 +74,10 @@ The chat itself never touches a server, but a few are needed to set it up:
   (`stun.cloudflare.com`, `stun.l.google.com`) tell each browser its address
   on the internet, so that devices on different networks can find a direct
   route to each other. They see the IP address of whoever asks, not the chat.
+- **TURN.** When two browsers find no direct route, the chat goes through
+  otr.to's own relay at `turn.otr.to` ([`turn/`](turn/README.md)). It sees the
+  IP addresses and how much is sent, but only ever relays encrypted packets,
+  and keeps no log of who used it.
 - **Analytics.** The page loads the apitiny analytics script.
 
 Whoever has the link can join the chat and read it. That includes the service
@@ -82,9 +86,8 @@ share it somewhere you trust.
 
 ### Limits
 
-- There is no TURN relay. Where both sides sit behind a strict NAT or
-  firewall, as on some mobile networks and in some offices, the browsers find
-  no direct route and cannot connect.
+- The TURN relay only listens on port 3478. A network that lets nothing but
+  HTTPS through, as some offices do, still leaves the browsers without a route.
 - Every message and file is sent once to every other person, which suits
   small groups.
 - Someone whose tab crashes or whose network drops stays listed for up to
@@ -161,6 +164,12 @@ on every pull request, in two jobs:
   build, which also type-checks everything the entry point reaches.
 - **End to end** runs the Playwright suite and keeps its HTML report as a
   build artifact for seven days.
+- **TURN relay** runs the relay's install script on the runner: a first
+  install, an update, and a broken version that has to roll back.
+
+[Deploy TURN relay](.github/workflows/deploy-turn.yml) runs the same checks
+after every merge to `main` that changes `turn/`, then installs the relay on
+the VPS.
 
 Dependabot checks the npm packages and the GitHub Actions weekly.
 
@@ -181,6 +190,7 @@ src/Struct/                Message, packet and file transfer models
 src/__tests__/             Jest tests
 e2e/                       Playwright tests and the static server they use
 public/                    Static site: index.html, manifest and the bundle
+turn/                      The TURN relay: coturn configuration and its deploy
 ```
 
 ## Deployment
@@ -188,3 +198,6 @@ public/                    Static site: index.html, manifest and the bundle
 `npm run build` produces a fully static site in `public`. Upload that folder
 to any static host. The app only uses the root path, so no rewrite rules are
 needed.
+
+The TURN relay deploys itself to its VPS from GitHub Actions; the one-time
+setup is in [`turn/README.md`](turn/README.md).

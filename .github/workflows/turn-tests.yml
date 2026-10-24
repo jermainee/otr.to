@@ -1,0 +1,37 @@
+# Tests of the TURN relay (turn/), shared by ci.yml and deploy-turn.yml.
+# The runner has systemd like the VPS, so this runs the real install script: a first install, an
+# update, and a broken version that has to roll back.
+name: TURN tests
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - run: shellcheck turn/deploy/install.sh
+
+      - name: Install, then update
+        run: |
+          sudo bash turn/deploy/install.sh turn first
+          sudo bash turn/deploy/install.sh turn second
+          systemctl is-active otr-turn
+
+      - name: A broken version rolls back
+        run: |
+          broken=$(mktemp -d)
+          cp -R turn/. "$broken/"
+          sed -i 's|^ExecStart=.*|ExecStart=/bin/false|' "$broken/deploy/otr-turn.service"
+          if sudo bash turn/deploy/install.sh "$broken" broken; then
+            echo "::error::install.sh took a version that does not start"
+            exit 1
+          fi
+          test "$(readlink /opt/otr-turn/current)" = /opt/otr-turn/releases/second
+          python3 turn/deploy/healthcheck.py /opt/otr-turn/current/turnserver.conf
