@@ -110,7 +110,7 @@ describe('Joining a chat through a link', () => {
             const {peer} = makeGroup('entry');
             peer.emit('open', 'm');
 
-            jest.advanceTimersByTime(5999);
+            jest.advanceTimersByTime(14999);
             expect(listener.onTurnedAway).not.toHaveBeenCalled();
 
             jest.advanceTimersByTime(1);

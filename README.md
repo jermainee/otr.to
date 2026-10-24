@@ -33,7 +33,7 @@ closed.
    and a random 22-character secret, and shows the chat link,
    `https://otr.to/#<peer-id>.<secret>`.
 2. Whoever opens that link creates a peer of their own and connects to the ID
-   after the `#`. If nobody answers within six seconds, the page says the chat
+   after the `#`. If nobody answers within 15 seconds, the page says the chat
    is no longer open and offers to start a new one. A link without a valid
    secret, for example one that was cut off when it was shared, is refused
    straight away.
@@ -70,9 +70,11 @@ The chat itself never touches a server, but a few are needed to set it up:
 - **Signalling.** The public PeerJS server (`0.peerjs.com`) brokers the
   connections. It sees the peer IDs and IP addresses and who connects to whom,
   but never the secret, so it cannot read the messages.
-- **STUN and TURN.** STUN servers help the browsers find a direct route. When
-  a firewall or NAT rules that out, traffic is relayed through a TURN server,
-  which forwards the encrypted data without being able to read it.
+- **STUN.** Cloudflare's and Google's public STUN servers
+  (`stun.cloudflare.com`, `stun.l.google.com`) tell each browser its address
+  on the internet, so that devices on different networks can find a direct
+  route to each other. They see the IP address of whoever asks, not the chat.
+- **Analytics.** The page loads the apitiny analytics script.
 
 Whoever has the link can join the chat and read it. That includes the service
 it was shared through, such as Telegram, WhatsApp or an email provider, so
@@ -80,12 +82,14 @@ share it somewhere you trust.
 
 ### Limits
 
+- There is no TURN relay. Where both sides sit behind a strict NAT or
+  firewall, as on some mobile networks and in some offices, the browsers find
+  no direct route and cannot connect.
 - Every message and file is sent once to every other person, which suits
   small groups.
 - Someone whose tab crashes or whose network drops stays listed for up to
   half a minute, until their heartbeat is missed.
 - People who join later do not see what was said before they came.
-- **Analytics.** The page loads the apitiny analytics script.
 
 ## Tech stack
 

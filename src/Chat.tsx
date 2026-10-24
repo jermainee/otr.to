@@ -67,10 +67,11 @@ export default class Chat extends React.Component<{}, IChatState> {
     private readonly peerId = ChatHelper.generatePeerId();
     private readonly config = {
         iceServers: [
-            {urls: 'stun:46.165.240.76:3478'},
-            {urls: 'stun:108.61.211.199:3478'},
-            {urls: 'turn:46.165.240.76:3478', credential: 'asperTinO1', username: 'otrto'},
-            {urls: 'turn:108.61.211.199:3478', credential: 'asperTinO1', username: 'otrto'}
+            // Tell each browser its address on the internet, without which two
+            // devices on different networks cannot find a way to each other.
+            // Public, free and run by two providers, so one being down is not
+            // enough to cut every chat off. They see who asks, not the chat.
+            {urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302']},
         ]
     };
 

@@ -2,8 +2,12 @@ import Peer, {DataConnection} from "peerjs";
 import RoomKey from "./RoomKey";
 import Packet from "../Struct/Packet";
 
-/** How long a connection gets to show that it holds the chat's key. */
-const HELLO_TIMEOUT = 6000;
+/**
+ * How long a connection gets to show that it holds the chat's key. Between
+ * two devices on different networks, finding a route and opening the channel
+ * alone can take several seconds, more so over mobile data.
+ */
+const HELLO_TIMEOUT = 15000;
 
 /** How often members tell each other they are still there. */
 const HEARTBEAT_INTERVAL = 5000;
