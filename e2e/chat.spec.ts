@@ -12,8 +12,8 @@ import {
 test('a link turns two browsers into one conversation', async ({context}) => {
     const {host, guest, hostPeerId} = await openConversation(context);
 
-    await expect(notices(host)).toHaveText(['Someone opened your link. You’re connected.']);
-    await expect(notices(guest)).toHaveText(['You’re connected.']);
+    await expect(notices(host)).toHaveText(['Someone opened your link. You’re connected. Messages are end-to-end encrypted.']);
+    await expect(notices(guest)).toHaveText(['You’re connected. Messages are end-to-end encrypted.']);
     expect(hostPeerId).toHaveLength(22);
 });
 
@@ -69,7 +69,7 @@ test('explains a stale link and offers a fresh start', async ({context}) => {
     const {host} = await openConversation(context);
 
     const stale = await host.context().newPage();
-    await stale.goto('/#a-peer-that-is-long-gone');
+    await stale.goto('/#a-peer-that-is-long-gone.TestSecretForTheLinks0');
 
     await expect(stale.getByRole('heading', {name: 'This chat is no longer open'})).toBeVisible({timeout: 30_000});
     await expect(messageInput(stale)).toHaveCount(0);
@@ -78,4 +78,14 @@ test('explains a stale link and offers a fresh start', async ({context}) => {
 
     await expect(stale).toHaveURL('/');
     await expect(shareLinkInput(stale)).toBeVisible();
+});
+
+test('explains a link that lost its secret on the way', async ({context}) => {
+    const {host, hostPeerId} = await openConversation(context);
+
+    const cut = await host.context().newPage();
+    await cut.goto('/#' + hostPeerId);
+
+    await expect(cut.getByRole('heading', {name: 'This link doesn’t work'})).toBeVisible();
+    await expect(messageInput(cut)).toHaveCount(0);
 });

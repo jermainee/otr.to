@@ -8,6 +8,7 @@ describe('Message', () => {
         expect(message.isSender).toBe(true);
         expect(message.isSystem).toBe(false);
         expect(message.fileId).toBeNull();
+        expect(message.author).toBeNull();
     });
 
     it('can be marked as a system message', () => {
@@ -16,5 +17,9 @@ describe('Message', () => {
 
     it('can stand for a file', () => {
         expect(new Message('notes.txt', true, false, 'file-1').fileId).toBe('file-1');
+    });
+
+    it('can say who sent it', () => {
+        expect(new Message('hi', false, false, null, 'a-peer-id').author).toBe('a-peer-id');
     });
 });

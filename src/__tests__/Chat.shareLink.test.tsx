@@ -7,6 +7,7 @@ jest.mock('copy-to-clipboard');
 const copy = require('copy-to-clipboard') as jest.Mock;
 
 const shareLink = () => (screen.getByDisplayValue(/otr\.to/) as HTMLInputElement).value;
+const secret = () => shareLink().split('.').pop();
 
 beforeEach(() => {
     FakePeer.reset();
@@ -14,18 +15,29 @@ beforeEach(() => {
 });
 
 describe('The share link', () => {
-    it('is built from the generated peer id', () => {
+    it('is built from the generated peer id and the secret of the chat’s key', () => {
         render(<Chat/>);
 
         expect(FakePeer.instances).toHaveLength(1);
-        expect(shareLink()).toBe("https://otr.to/#" + FakePeer.instances[0].id);
+        expect(shareLink()).toBe("https://otr.to/#" + FakePeer.instances[0].id + "." + secret());
+        expect(secret()).toMatch(/^[0-9A-Za-z]{22}$/);
+    });
+
+    it('carries a new secret for every chat', () => {
+        const first = render(<Chat/>);
+        const firstSecret = secret();
+        first.unmount();
+
+        render(<Chat/>);
+
+        expect(secret()).not.toBe(firstSecret);
     });
 
     it('is what the share buttons point at, peer id included', () => {
         render(<Chat/>);
 
-        // Unencoded, the # would end the share URL and drop the peer id.
-        const link = encodeURIComponent("https://otr.to/#" + FakePeer.instances[0].id);
+        // Unencoded, the # would end the share URL and drop the peer id and the secret.
+        const link = encodeURIComponent(shareLink());
 
         expect(screen.getByRole('link', {name: 'Telegram'})).toHaveAttribute(
             'href', "https://telegram.me/share/url?url=" + link);
@@ -43,7 +55,7 @@ describe('The share link', () => {
 
             fireEvent.click(screen.getByRole('button', {name: 'Copy link'}));
 
-            expect(copy.mock.calls[0][0]).toBe("https://otr.to/#" + FakePeer.instances[0].id);
+            expect(copy.mock.calls[0][0]).toBe(shareLink());
             expect(screen.getByRole('button', {name: 'Link copied'})).toBeInTheDocument();
             expect(screen.getByRole('status')).toHaveTextContent('Link copied. Waiting for someone to open it');
 
@@ -54,6 +66,29 @@ describe('The share link', () => {
         } finally {
             jest.useRealTimers();
         }
+    });
+
+    it('comes with what otr.to does, as a list of features', () => {
+        render(<Chat/>);
+
+        const features = screen.getByRole('heading', {name: 'Features'}).parentElement.querySelector('ul');
+        const titles = Array.from(features.querySelectorAll('li h3'), title => title.textContent);
+
+        expect(titles).toEqual([
+            'Direct connection',
+            'End-to-end encrypted',
+            'Group chats',
+            'File sharing',
+            'No sign-up',
+            'No history',
+        ]);
+        features.querySelectorAll('li').forEach(item => expect(item.querySelector('p').textContent).toMatch(/\.$/));
+    });
+
+    it('tells that anyone with the link can join', () => {
+        render(<Chat/>);
+
+        expect(screen.getByText(/anyone who has the link can join/)).toBeInTheDocument();
     });
 
     it('sits above a single rule and a button to the repository', () => {
@@ -75,6 +110,7 @@ describe('The share link', () => {
             screen.getByRole('button', {name: 'Copy link'}),
             screen.getByRole('link', {name: 'Telegram'}),
             screen.getByRole('link', {name: 'WhatsApp'}),
+            screen.getByRole('link', {name: 'Email'}),
             screen.getByRole('link', {name: 'View on GitHub'}),
         ];
 

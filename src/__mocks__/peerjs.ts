@@ -6,7 +6,7 @@
  * without an explicit `jest.mock('peerjs')`.
  */
 
-type Handler = (...args: any[]) => void;
+type Handler = (...args: any[]) => unknown;
 
 class FakeEmitter {
     private handlers = new Map<string, Handler[]>();
@@ -21,7 +21,19 @@ class FakeEmitter {
 
     /** Test helper: fire an event the real peerjs would have fired. */
     public emit(event: string, ...args: any[]): void {
-        (this.handlers.get(event) || []).forEach(handler => handler(...args));
+        this.fire(event, args);
+    }
+
+    /**
+     * Test helper: like emit(), but resolves once whatever the handlers
+     * started has settled, for handlers that return a promise.
+     */
+    public emitAndSettle(event: string, ...args: any[]): Promise<void> {
+        return Promise.all(this.fire(event, args)).then(() => undefined);
+    }
+
+    protected fire(event: string, args: any[]): unknown[] {
+        return (this.handlers.get(event) || []).map(handler => handler(...args));
     }
 }
 
@@ -29,19 +41,35 @@ export class FakeDataConnection extends FakeEmitter {
     /** Everything passed to send(), so tests can assert on the wire format. */
     public readonly sent: any[] = [];
 
+    /** Whether the data channel is up, between the open and the close event. */
+    public open = false;
+
+    /** Whether close() was called, which is how a peer hangs up. */
+    public closed = false;
+
     public constructor(public readonly peer: string) {
         super();
     }
 
-    /** Whether close() was called, which is how a peer hangs up. */
-    public closed = false;
+    protected fire(event: string, args: any[]): unknown[] {
+        if (event === 'open' || event === 'close') {
+            this.open = event === 'open';
+        }
+
+        return super.fire(event, args);
+    }
 
     public send(data: any): void {
         this.sent.push(data);
     }
 
+    /** Like peerjs, reports the close to its own side, but only for an open connection. */
     public close(): void {
         this.closed = true;
+
+        if (this.open) {
+            this.emit('close');
+        }
     }
 }
 
@@ -51,6 +79,7 @@ export default class FakePeer extends FakeEmitter {
 
     public readonly connections = {};
     public readonly outgoing: FakeDataConnection[] = [];
+    public destroyed = false;
 
     public constructor(public readonly id: string, public readonly options: any) {
         super();
@@ -62,6 +91,10 @@ export default class FakePeer extends FakeEmitter {
         this.outgoing.push(connection);
 
         return connection;
+    }
+
+    public destroy(): void {
+        this.destroyed = true;
     }
 
     public static reset(): void {

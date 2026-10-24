@@ -7,6 +7,8 @@ interface Conversation {
     /** The person who opened that link. */
     guest: Page;
     hostPeerId: string;
+    /** The whole link the host shared, peer id and secret included. */
+    link: string;
 }
 
 /** A connection over loopback is quick, but it is still ICE and a build server. */
@@ -18,10 +20,22 @@ export const ownMessages = (page: Page): Locator => page.locator('.chat-row.is-o
 export const peerMessages = (page: Page): Locator => page.locator('.chat-row.is-peer .chat-text');
 export const notices = (page: Page): Locator => page.locator('.chat-notice');
 export const fileTransfers = (page: Page): Locator => page.locator('.chat-file');
+export const authors = (page: Page): Locator => page.locator('.chat-author');
+export const people = (page: Page): Locator => page.getByText(/people in this chat/);
 
-/** Opens the app as the host and reads the link they are told to pass on. */
-export async function openAsHost(context: BrowserContext): Promise<Page> {
-    await relaySignalling(context);
+/** What a chat link carries after the #: the peer to dial, then the chat's secret. */
+export function partsOf(link: string): {peerId: string, secret: string} {
+    const [peerId, secret] = link.split('#')[1].split('.');
+
+    return {peerId, secret};
+}
+
+/**
+ * Opens the app as the host and reads the link they are told to pass on.
+ * What the signalling server gets to see goes into `signalling`.
+ */
+export async function openAsHost(context: BrowserContext, signalling: string[] = []): Promise<Page> {
+    await relaySignalling(context, signalling);
 
     const host = await context.newPage();
     await host.goto('/');
@@ -35,17 +49,23 @@ export async function openAsHost(context: BrowserContext): Promise<Page> {
  * and both wait until the data channel is up, which is when the app offers a
  * message input.
  */
-export async function openConversation(context: BrowserContext): Promise<Conversation> {
-    const host = await openAsHost(context);
-    const hostPeerId = (await shareLinkInput(host).inputValue()).split('#')[1];
-
-    const guest = await context.newPage();
-    await guest.goto('/#' + hostPeerId);
+export async function openConversation(context: BrowserContext, signalling: string[] = []): Promise<Conversation> {
+    const host = await openAsHost(context, signalling);
+    const link = await shareLinkInput(host).inputValue();
+    const guest = await join(context, link);
 
     await expect(messageInput(host)).toBeVisible({timeout: CONNECT_TIMEOUT});
-    await expect(messageInput(guest)).toBeVisible({timeout: CONNECT_TIMEOUT});
 
-    return {host, guest, hostPeerId};
+    return {host, guest, hostPeerId: partsOf(link).peerId, link};
+}
+
+/** Opens a chat link in a new page and waits until it is in the chat. */
+export async function join(context: BrowserContext, link: string): Promise<Page> {
+    const page = await context.newPage();
+    await page.goto('/#' + link.split('#')[1]);
+    await expect(messageInput(page)).toBeVisible({timeout: CONNECT_TIMEOUT});
+
+    return page;
 }
 
 /** Types a message and submits the form, the way pressing enter does. */
