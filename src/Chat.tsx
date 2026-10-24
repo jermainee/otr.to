@@ -188,9 +188,9 @@ export default class Chat extends React.Component<{}, IChatState> {
                         </div>
                         <div className="control">
                             <CopyToClipboard text={link} onCopy={this.confirmCopy}>
-                                <button type="button" className="button is-primary is-medium">
+                                <button type="button" className="button is-primary is-medium"
+                                        aria-label={this.state.wasCopied ? 'Link copied' : 'Copy link'}>
                                     <span className="icon">{this.state.wasCopied ? <CheckIcon/> : <CopyIcon/>}</span>
-                                    <span className="is-sr-only">{this.state.wasCopied ? 'Link copied' : 'Copy link'}</span>
                                 </button>
                             </CopyToClipboard>
                         </div>

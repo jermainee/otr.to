@@ -19,7 +19,13 @@
 <body>
     <nav class="navbar is-primary is-fixed-top" role="navigation" aria-label="main navigation">
         <div class="navbar-brand">
-            <a class="navbar-item has-text-weight-bold" href="/" title="otr.to">otr.to</a>
+            <a class="navbar-item" href="/" aria-label="otr.to">
+                <!-- public/logo.svg in the navbar's text colour, which Bulma changes between light and dark mode. -->
+                <svg viewBox="2 3 96 26" width="74" height="20" fill="currentColor" aria-hidden="true">
+                    <path d="M7 3h18a5 5 0 0 1 5 5v11a5 5 0 0 1-5 5H15l-7 5v-5H7a5 5 0 0 1-5-5V8a5 5 0 0 1 5-5zM68.6 21.98a2.02 2.02 0 1 0 4.03 0a2.02 2.02 0 1 0-4.03 0"/>
+                    <path fill="none" stroke="currentColor" stroke-width="3.6" d="M38.8 17a5.55 5.55 0 1 0 11.1 0a5.55 5.55 0 1 0-11.1 0M55.6 5.5V18.6A3.6 3.6 0 0 0 59.2 22.2H60.4M53 11.8H60.4M63.8 24V16.2A4.4 4.4 0 0 1 68.2 11.8H69.6M76.83 5.5V18.6A3.6 3.6 0 0 0 80.43 22.2H81.63M74.23 11.8H81.63M84.73 17a5.55 5.55 0 1 0 11.1 0a5.55 5.55 0 1 0-11.1 0"/>
+                </svg>
+            </a>
         </div>
     </nav>
 
