@@ -1,5 +1,5 @@
 import * as React from "react";
-import {fireEvent, render, screen} from "@testing-library/react";
+import {act, fireEvent, render, screen} from "@testing-library/react";
 import Chat from "../Chat";
 import FakePeer from "../__mocks__/peerjs";
 
@@ -21,26 +21,39 @@ describe('The share link', () => {
         expect(shareLink()).toBe("https://otr.to/#" + FakePeer.instances[0].id);
     });
 
-    it('is what the share buttons point at', () => {
+    it('is what the share buttons point at, peer id included', () => {
         render(<Chat/>);
 
-        const link = "https://otr.to/#" + FakePeer.instances[0].id;
+        // Unencoded, the # would end the share URL and drop the peer id.
+        const link = encodeURIComponent("https://otr.to/#" + FakePeer.instances[0].id);
 
-        expect(screen.getByText('Telegram').closest('a')).toHaveAttribute(
+        expect(screen.getByRole('link', {name: 'Telegram'})).toHaveAttribute(
             'href', "https://telegram.me/share/url?url=" + link);
-        expect(screen.getByText('WhatsApp').closest('a')).toHaveAttribute(
+        expect(screen.getByRole('link', {name: 'WhatsApp'})).toHaveAttribute(
             'href', "https://wa.me/?text=" + link);
-        expect(screen.getByText('E-Mail').closest('a')).toHaveAttribute(
+        expect(screen.getByRole('link', {name: 'Email'})).toHaveAttribute(
             'href', "mailto:?subject=&body=" + link);
     });
 
-    it('is what the button next to it copies', () => {
-        render(<Chat/>);
+    it('is what the button next to it copies, which confirms it for a moment', () => {
+        jest.useFakeTimers();
 
-        fireEvent.click(screen.getByRole('button', {name: 'Copy link'}));
+        try {
+            render(<Chat/>);
 
-        expect(copy.mock.calls[0][0]).toBe("https://otr.to/#" + FakePeer.instances[0].id);
-        expect(screen.getAllByText('Copied!')).toHaveLength(1);
+            fireEvent.click(screen.getByRole('button', {name: 'Copy link'}));
+
+            expect(copy.mock.calls[0][0]).toBe("https://otr.to/#" + FakePeer.instances[0].id);
+            expect(screen.getByRole('button', {name: 'Link copied'})).toBeInTheDocument();
+            expect(screen.getByRole('status')).toHaveTextContent('Link copied. Waiting for someone to open it');
+
+            act(() => { jest.advanceTimersByTime(2500); });
+
+            expect(screen.getByRole('button', {name: 'Copy link'})).toBeInTheDocument();
+            expect(screen.getByRole('status')).toHaveTextContent('Waiting for someone to open the link');
+        } finally {
+            jest.useRealTimers();
+        }
     });
 
     it('sits above a single rule and a button to the repository', () => {

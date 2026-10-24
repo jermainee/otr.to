@@ -14,10 +14,10 @@ const CONNECT_TIMEOUT = 20_000;
 
 export const shareLinkInput = (page: Page): Locator => page.locator('input[readonly]');
 export const messageInput = (page: Page): Locator => page.getByPlaceholder('Type your message');
-export const ownMessages = (page: Page): Locator => page.locator('.messages .has-text-right');
-export const peerMessages = (page: Page): Locator => page.locator('.messages .has-text-left');
-export const notices = (page: Page): Locator => page.locator('.messages .has-text-centered');
-export const fileTransfers = (page: Page): Locator => page.locator('.box');
+export const ownMessages = (page: Page): Locator => page.locator('.chat-row.is-own .chat-text');
+export const peerMessages = (page: Page): Locator => page.locator('.chat-row.is-peer .chat-text');
+export const notices = (page: Page): Locator => page.locator('.chat-notice');
+export const fileTransfers = (page: Page): Locator => page.locator('.chat-file');
 
 /** Opens the app as the host and reads the link they are told to pass on. */
 export async function openAsHost(context: BrowserContext): Promise<Page> {

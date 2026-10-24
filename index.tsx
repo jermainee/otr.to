@@ -4,8 +4,9 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Chat from "./src/Chat";
 
 import "bulma";
-// After bulma, so it overrides it.
+// After bulma, so they override it.
 import "./src/theme.css";
+import "./src/chat.css";
 
 createRoot(document.getElementById("root")).render(
     <Router>

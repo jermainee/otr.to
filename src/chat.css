@@ -1,0 +1,264 @@
+/* Start page: the link is the task, everything else explains it. */
+
+.start {
+    padding: 2rem 1rem 4rem;
+}
+
+.start-invite .title {
+    margin-bottom: .75rem;
+}
+
+.start-lead {
+    max-width: 34rem;
+    margin-bottom: 1.5rem;
+}
+
+.start-share-title {
+    margin: 2rem 0 .75rem;
+    font-weight: 600;
+    color: var(--bulma-text-strong);
+}
+
+.start-about {
+    margin-top: 3.5rem;
+}
+
+.start-about .title {
+    margin-bottom: .75rem;
+}
+
+.start-about-intro {
+    max-width: 40rem;
+    margin-bottom: 1.5rem;
+}
+
+.start-features {
+    display: grid;
+    gap: 1rem 2.5rem;
+}
+
+@media (min-width: 769px) {
+    .start-features {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.start-about hr {
+    height: 1px;
+    margin: 2.5rem 0 2rem;
+    background-color: var(--bulma-border-weak);
+}
+
+/* Something is under way: a dot that keeps breathing until it is done. */
+
+.status-line {
+    display: flex;
+    align-items: center;
+    gap: .625rem;
+    font-size: .875rem;
+    color: var(--bulma-text-weak);
+}
+
+.status-dot {
+    position: relative;
+    flex: none;
+    width: .5rem;
+    height: .5rem;
+    border-radius: 50%;
+    background-color: var(--otr-primary);
+}
+
+.status-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-color: inherit;
+    animation: otr-pulse 1.8s cubic-bezier(.16, 1, .3, 1) infinite;
+}
+
+@keyframes otr-pulse {
+    from {
+        opacity: .6;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(3);
+    }
+}
+
+/* Connecting, a link nobody answers, no connection server. */
+
+.state-screen {
+    padding: 4rem 1rem;
+}
+
+.state-screen .title {
+    display: flex;
+    align-items: center;
+    gap: .875rem;
+    margin-bottom: .75rem;
+}
+
+.state-screen p {
+    max-width: 34rem;
+    margin-bottom: 1.5rem;
+}
+
+/* The conversation. */
+
+.chat {
+    /* Room for the composer, which sits on top of the page. */
+    padding: 1.25rem 1rem calc(6rem + env(safe-area-inset-bottom));
+}
+
+.chat-log {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-notice {
+    align-self: center;
+    max-width: 30rem;
+    margin: 1rem 0 .5rem;
+    font-size: .8125rem;
+    line-height: 1.4;
+    text-align: center;
+    text-wrap: balance;
+    color: var(--bulma-text-weak);
+}
+
+.chat-row {
+    display: flex;
+    margin-top: .75rem;
+}
+
+.chat-row.is-continued {
+    margin-top: .125rem;
+}
+
+.chat-row.is-own {
+    justify-content: flex-end;
+}
+
+.chat-bubble {
+    max-width: min(80%, 30rem);
+    padding: .5rem .875rem;
+    border-radius: 1.125rem;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    animation: otr-arrive 220ms cubic-bezier(.16, 1, .3, 1);
+}
+
+.is-own .chat-bubble {
+    background-color: var(--otr-own-bubble);
+    color: var(--otr-own-text);
+}
+
+.is-peer .chat-bubble {
+    background-color: var(--otr-peer-bubble);
+    color: var(--otr-peer-text);
+}
+
+/* Where messages run together, the corners on the sender's side tighten. */
+.is-own.is-continued .chat-bubble {
+    border-top-right-radius: .375rem;
+}
+
+.is-own.is-followed .chat-bubble {
+    border-bottom-right-radius: .375rem;
+}
+
+.is-peer.is-continued .chat-bubble {
+    border-top-left-radius: .375rem;
+}
+
+.is-peer.is-followed .chat-bubble {
+    border-bottom-left-radius: .375rem;
+}
+
+@keyframes otr-arrive {
+    from {
+        opacity: .4;
+        transform: translateY(.375rem);
+    }
+}
+
+.chat-file {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    min-width: 15rem;
+    padding: .625rem .875rem .625rem .625rem;
+    white-space: normal;
+}
+
+.chat-file-body {
+    min-width: 0;
+}
+
+.chat-file .button {
+    margin-top: .5rem;
+}
+
+.chat-file-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: .375rem;
+    border-radius: .625rem;
+    background-color: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.chat-file-name {
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.chat-file-meta {
+    font-size: .8125rem;
+    line-height: 1.3;
+}
+
+.chat-file .progress {
+    height: .375rem;
+    margin: .5rem 0 0;
+}
+
+/* The composer stays at the bottom while the conversation scrolls under it. */
+
+.chat-composer {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 30;
+    padding: .75rem 0 max(.75rem, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--bulma-border-weak);
+    background-color: var(--bulma-scheme-main);
+}
+
+.chat-composer .container {
+    padding: 0 1rem;
+}
+
+.chat-composer .field {
+    margin-bottom: 0;
+}
+
+.chat-ended {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.chat-ended p {
+    color: var(--bulma-text-weak);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chat-bubble,
+    .status-dot::after {
+        animation: none;
+    }
+}
