@@ -11,4 +11,13 @@ export default class ChatHelper
 
         return Array.from(array, byte => byte.toString(36)).join('').substring(0, 22);
     }
+
+    public static formatFileSize(bytes: number): string
+    {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
 }

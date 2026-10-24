@@ -16,6 +16,33 @@ const Icon = ({viewBox, children}: IIconProps) => (
     </svg>
 );
 
+// Attach, send, check and file come from Material Icons, like the copy icon,
+// so the interface icons share one drawing style.
+
+export const AttachIcon = () => (
+    <Icon viewBox="0 0 24 24">
+        <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/>
+    </Icon>
+);
+
+export const SendIcon = () => (
+    <Icon viewBox="0 0 24 24">
+        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+    </Icon>
+);
+
+export const CheckIcon = () => (
+    <Icon viewBox="0 0 24 24">
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+    </Icon>
+);
+
+export const FileIcon = () => (
+    <Icon viewBox="0 0 24 24">
+        <path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"/>
+    </Icon>
+);
+
 export const CopyIcon = () => (
     <Icon viewBox="0 0 561 561">
         <path d="M395.25,0h-306c-28.05,0-51,22.95-51,51v357h51V51h306V0z M471.75,102h-280.5c-28.05,0-51,22.95-51,51v357c0,28.05,22.95,51,51,51h280.5c28.05,0,51-22.95,51-51V153C522.75,124.95,499.8,102,471.75,102z M471.75,510h-280.5V153h280.5V510z"/>

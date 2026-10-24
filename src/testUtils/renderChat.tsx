@@ -56,8 +56,3 @@ export function renderChatAsGuest(targetPeerId: string = 'invited-peer-id'): Ren
 
     return {view, peer, connection};
 }
-
-/** The section holding the share link, whether it is currently shown or not. */
-export function shareSection(): HTMLElement {
-    return document.querySelector('div.container.content, div.is-hidden');
-}

@@ -33,6 +33,9 @@ beforeEach(() => {
 
 afterEach(() => jest.restoreAllMocks());
 
+/** The size and state line of the one file in the conversation. */
+const meta = () => document.querySelector('.chat-file-meta');
+
 const chunk = (byte: number, size: number = CHUNK_SIZE) => {
     const buffer = new Uint8Array(size);
     buffer.fill(byte);
@@ -69,7 +72,7 @@ describe('Receiving a file', () => {
         expect(document.querySelector('progress')).toBeNull();
     });
 
-    it('announces the file and its human readable size', () => {
+    it('shows the file in the conversation, from the peer, with a readable size', () => {
         const {connection} = renderChatAsHost();
 
         act(() => connection.emit('data', {
@@ -81,26 +84,8 @@ describe('Receiving a file', () => {
             totalChunks: 2,
         }));
 
-        expect(document.querySelector('.box')).toHaveTextContent('holiday.png (20 KB)');
-        expect(screen.getByText('📎 Receiving file: holiday.png (20 KB)')).toBeInTheDocument();
-    });
-
-    it.each([
-        [0, '0 Bytes'],
-        [512, '512 Bytes'],
-        [2048, '2 KB'],
-        [1536, '1.5 KB'],
-        [5 * 1024 * 1024, '5 MB'],
-        [3 * 1024 * 1024 * 1024, '3 GB'],
-    ])('renders %i bytes as %s', (size, formatted) => {
-        const {connection} = renderChatAsHost();
-
-        act(() => connection.emit('data', {
-            type: 'file-start', fileId: 'file-1', fileName: 'holiday.png',
-            fileSize: size, fileType: 'image/png', totalChunks: 1,
-        }));
-
-        expect(document.querySelector('.box')).toHaveTextContent('holiday.png (' + formatted + ')');
+        expect(screen.getByText('holiday.png').closest('.chat-row')).toHaveClass('is-peer');
+        expect(meta()).toHaveTextContent('20 KB, 0% received');
     });
 
     it('tracks progress chunk by chunk', () => {
@@ -111,14 +96,14 @@ describe('Receiving a file', () => {
             fileSize: 4 * CHUNK_SIZE, fileType: 'image/png', totalChunks: 4,
         }));
 
-        expect(screen.getByText('0/4 chunks received')).toBeInTheDocument();
+        expect(meta()).toHaveTextContent('64 KB, 0% received');
         expect(document.querySelector('progress')).toHaveValue(0);
 
         act(() => connection.emit('data', {
             type: 'file-chunk', fileId: 'file-1', chunkIndex: 0, chunk: chunk(1),
         }));
 
-        expect(screen.getByText('1/4 chunks received')).toBeInTheDocument();
+        expect(meta()).toHaveTextContent('64 KB, 25% received');
         expect(document.querySelector('progress')).toHaveValue(25);
     });
 
@@ -130,6 +115,7 @@ describe('Receiving a file', () => {
         }));
 
         expect(document.querySelector('progress')).toBeNull();
+        expect(document.querySelector('.chat-file')).toBeNull();
     });
 
     it('offers a download once the last chunk arrived', () => {
@@ -137,13 +123,12 @@ describe('Receiving a file', () => {
 
         receiveFile(connection);
 
-        expect(screen.getByText('Transfer completed')).toBeInTheDocument();
-        expect(screen.getByText('✅ File received: holiday.png')).toBeInTheDocument();
-        expect(document.querySelector('progress')).toHaveValue(100);
+        expect(meta()).toHaveTextContent('16.1 KB, received');
+        expect(document.querySelector('progress')).toBeNull();
         expect(screen.getByRole('button', {name: 'Download'})).toBeInTheDocument();
     });
 
-    it('reassembles the chunks into one download and drops the transfer', () => {
+    it('reassembles the chunks into one download and lets go of them', () => {
         const {connection} = renderChatAsHost();
 
         receiveFile(connection, {chunks: 2, size: CHUNK_SIZE + 100});
@@ -155,7 +140,8 @@ describe('Receiving a file', () => {
         expect(objectUrls.created[0].size).toBe(CHUNK_SIZE + 100);
         expect(objectUrls.created[0].type).toBe('image/png');
         expect(objectUrls.revoked).toEqual(['blob:otr.to/1']);
-        expect(screen.queryByText('holiday.png')).not.toBeInTheDocument();
+        expect(meta()).toHaveTextContent('16.1 KB, saved');
+        expect(screen.queryByRole('button', {name: 'Download'})).not.toBeInTheDocument();
     });
 });
 
@@ -194,13 +180,14 @@ describe('Sending a file', () => {
         expect(ids.size).toBe(1);
     });
 
-    it('reports the send in the conversation', async () => {
+    it('shows the file as an own message until it is sent', async () => {
         const {connection} = renderChatAsHost();
 
         await send(new File(['x'.repeat(2048)], 'notes.txt', {type: 'text/plain'}));
 
-        await waitFor(() => expect(screen.getByText('✅ File sent: notes.txt')).toBeInTheDocument());
-        expect(screen.getByText('📎 Sending file: notes.txt (2 KB)')).toBeInTheDocument();
+        await waitFor(() => expect(meta()).toHaveTextContent('2 KB, sent'));
+        expect(screen.getByText('notes.txt').closest('.chat-row')).toHaveClass('is-own');
+        expect(screen.queryByRole('button', {name: 'Download'})).not.toBeInTheDocument();
         expect(connection.sent).toHaveLength(3);
     });
 
@@ -212,6 +199,6 @@ describe('Sending a file', () => {
         expect(fileInput().value).toBe('');
 
         // The chunks are read asynchronously; let them finish before unmounting.
-        await waitFor(() => expect(screen.getByText('✅ File sent: notes.txt')).toBeInTheDocument());
+        await waitFor(() => expect(meta()).toHaveTextContent('1 Bytes, sent'));
     });
 });

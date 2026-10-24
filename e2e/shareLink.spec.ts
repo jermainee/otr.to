@@ -9,21 +9,27 @@ test.describe('Waiting for someone to join', () => {
         const peerId = link.split('#')[1];
 
         expect(peerId).toHaveLength(22);
-        await expect(host.getByRole('heading', {name: 'Start chatting'})).toBeVisible();
+        await expect(host.getByRole('heading', {name: 'Start a private chat'})).toBeVisible();
+        await expect(host.getByRole('status')).toHaveText('Waiting for someone to open the link');
         await expect(messageInput(host)).toHaveCount(0);
     });
 
-    test('hands that link to the share buttons', async ({context}) => {
+    test('hands that link to the share buttons, peer id included', async ({context}) => {
         const host = await openAsHost(context);
 
         const link = await shareLinkInput(host).inputValue();
+        const shared = encodeURIComponent(link);
 
         await expect(host.getByRole('link', {name: 'Telegram'}))
-            .toHaveAttribute('href', 'https://telegram.me/share/url?url=' + link);
+            .toHaveAttribute('href', 'https://telegram.me/share/url?url=' + shared);
         await expect(host.getByRole('link', {name: 'WhatsApp'}))
-            .toHaveAttribute('href', 'https://wa.me/?text=' + link);
-        await expect(host.getByRole('link', {name: 'E-Mail'}))
-            .toHaveAttribute('href', 'mailto:?subject=&body=' + link);
+            .toHaveAttribute('href', 'https://wa.me/?text=' + shared);
+        await expect(host.getByRole('link', {name: 'Email'}))
+            .toHaveAttribute('href', 'mailto:?subject=&body=' + shared);
+
+        // What a share target reads back out of its query string.
+        const telegram = await host.getByRole('link', {name: 'Telegram'}).getAttribute('href');
+        expect(new URL(telegram).searchParams.get('url')).toBe(link);
     });
 
     test('copies that link to the clipboard', async ({context}) => {
@@ -32,7 +38,8 @@ test.describe('Waiting for someone to join', () => {
         const link = await shareLinkInput(host).inputValue();
         await host.getByRole('button', {name: 'Copy link'}).click();
 
-        await expect(host.getByText('Copied!')).toBeVisible();
+        await expect(host.getByRole('button', {name: 'Link copied'})).toBeVisible();
+        await expect(host.getByRole('status')).toHaveText('Link copied. Waiting for someone to open it');
         expect(await host.evaluate(() => navigator.clipboard.readText())).toBe(link);
     });
 

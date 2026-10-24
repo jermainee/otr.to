@@ -33,8 +33,15 @@ export class FakeDataConnection extends FakeEmitter {
         super();
     }
 
+    /** Whether close() was called, which is how a peer hangs up. */
+    public closed = false;
+
     public send(data: any): void {
         this.sent.push(data);
+    }
+
+    public close(): void {
+        this.closed = true;
     }
 }
 

@@ -2,28 +2,28 @@ import * as React from "react";
 import ChatHelper from "./Service/ChatHelper";
 import Peer, {DataConnection} from "peerjs";
 import Message from "./Struct/Message";
+import FileTransfer from "./Struct/FileTransfer";
 import Messages from "./Messages";
-import {CopyIcon, GitHubIcon, TelegramIcon, WhatsAppIcon} from "./Icons";
+import {AttachIcon, CheckIcon, CopyIcon, GitHubIcon, SendIcon, TelegramIcon, WhatsAppIcon} from "./Icons";
 import {CopyToClipboard} from 'react-copy-to-clipboard';
 
+/**
+ * Where the conversation stands:
+ * - waiting: the host shows the link and waits for someone to open it,
+ * - connecting: the guest opened a link and is dialling the host,
+ * - connected: both sides can talk,
+ * - ended: the other side left,
+ * - unavailable: nobody answered the link the guest opened,
+ * - offline: the connection server that introduces the peers is out of reach.
+ */
+type Status = 'waiting' | 'connecting' | 'connected' | 'ended' | 'unavailable' | 'offline';
+
 interface IChatState {
+    status: Status;
     messages: Message[];
     connection: DataConnection|null;
-    showLink: boolean;
     wasCopied: boolean;
     fileTransfers: Map<string, FileTransfer>;
-}
-
-interface FileTransfer {
-    id: string;
-    name: string;
-    size: number;
-    type: string;
-    chunks: ArrayBuffer[];
-    totalChunks: number;
-    receivedChunks: number;
-    isComplete: boolean;
-    progress: number;
 }
 
 interface FileMessage {
@@ -36,6 +36,12 @@ interface FileMessage {
     chunkIndex?: number;
     chunk?: ArrayBuffer;
 }
+
+/** How long a guest waits for the host to answer before giving up. */
+const DIAL_TIMEOUT = 6000;
+
+/** How long the copy button confirms the copy. */
+const COPIED_FOR = 2500;
 
 export default class Chat extends React.Component<{}, IChatState> {
     private readonly peerId = ChatHelper.generatePeerId();
@@ -50,298 +56,328 @@ export default class Chat extends React.Component<{}, IChatState> {
 
     private fileInputRef = React.createRef<HTMLInputElement>();
     private readonly CHUNK_SIZE = 16384; // 16KB chunks
+    private dialTimer: number | undefined;
+    private copiedTimer: number | undefined;
 
     public constructor(props: {}) {
         super(props);
         this.state = {
+            status: this.targetPeerId() === '' ? 'waiting' : 'connecting',
             messages: [],
             connection: null,
-            showLink: false,
             wasCopied: false,
             fileTransfers: new Map(),
         };
     }
 
     public componentDidMount() {
-        const targetPeerId = window.top.location.hash.substr(1);
+        const targetPeerId = this.targetPeerId();
 
         if (targetPeerId !== '') {
             this.connect(new Peer(this.peerId, { config: this.config }), targetPeerId);
         } else {
             this.createPeer();
         }
+
+        window.addEventListener('pagehide', this.hangUp);
+    }
+
+    public componentWillUnmount() {
+        window.clearTimeout(this.dialTimer);
+        window.clearTimeout(this.copiedTimer);
+        window.removeEventListener('pagehide', this.hangUp);
     }
 
     public render() {
-        const link = "https://otr.to/#" + this.peerId;
-        const messageInput = this.state.connection ? (
-            <div className="container" style={{ position: 'fixed', bottom: 0, right: '50%', transform: 'translateX(50%)', width: '100%', padding: '.5rem' }}>
-                <form onSubmit={this.sendMessage}>
-                    <div className="columns is-mobile is-gapless">
-                        <div className="column is-narrow">
-                            <input
-                                ref={this.fileInputRef}
-                                type="file"
-                                style={{ display: 'none' }}
-                                onChange={this.handleFileSelect}
-                                multiple
-                            />
-                            <button
-                                type="button"
-                                className="button is-light"
-                                onClick={() => this.fileInputRef.current?.click()}
-                                style={{
-                                    borderRadius: '4px 0 0 4px',
-                                    border: '1px solid #dbdbdb',
-                                    borderRight: 'none'
-                                }}
-                                title="Attach file"
-                            >
-                                📎
-                            </button>
-                        </div>
-                        <div className="column">
-                            <input className="input is-fullwidth is-expanded"
-                                   name="userInput"
-                                   type="text"
-                                   placeholder="Type your message"
-                                   autoComplete="off"
-                                   autoCapitalize="off"
-                                   autoCorrect="off"
-                                   spellCheck="false"
-                                   style={{
-                                       outline: 'none',
-                                       boxShadow: 'none',
-                                       borderRadius: '0',
-                                       borderLeft: 'none'
-                                   }}
-                                   required={true}
-                                   autoFocus={true}
-                            />
-                        </div>
+        switch (this.state.status) {
+            case 'waiting':
+                return this.renderInvitation();
+            case 'connecting':
+                return this.renderNotice(
+                    'Connecting to the chat',
+                    'This takes a few seconds.',
+                );
+            case 'unavailable':
+                return this.renderNotice(
+                    'This chat is no longer open',
+                    'The person who sent you the link may have closed the page. Ask them for a new link, or start a chat of your own.',
+                    <a className="button is-primary" href="/">Start a new chat</a>,
+                );
+            case 'offline':
+                return this.renderNotice(
+                    'Can’t reach the connection server',
+                    'otr.to needs it to bring the two of you together. Check your internet connection and try again.',
+                    <button type="button" className="button is-primary" onClick={() => window.location.reload()}>
+                        Try again
+                    </button>,
+                );
+            default:
+                return this.renderConversation();
+        }
+    }
 
-                        <div className="column is-narrow has-text-right">
-                            <button className="button is-primary"
-                                    style={{
-                                        fontWeight: 'bold',
-                                        borderRadius: '0 4px 4px 0'
-                                    }}
-                            >↣</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        ) : '';
+    private renderInvitation() {
+        const link = "https://otr.to/#" + this.peerId;
+        const shared = encodeURIComponent(link);
 
         return (
-            <div style={{ marginBottom: '4rem'}}>
-                <div className="container">
-                    <Messages messages={this.state.messages}/>
-                    {this.renderFileTransfers()}
-                </div>
+            <main className="container start">
+                <section className="start-invite" aria-labelledby="start-title">
+                    <h1 id="start-title" className="title is-3">Start a private chat</h1>
+                    <p className="start-lead">
+                        Send this link to the person you want to chat with. The chat starts as soon as they open it.
+                    </p>
 
-                {messageInput}
-
-                <div className={(this.state.showLink ? 'container content' : 'is-hidden')}>
-                    <div style={{padding: '2rem 1rem 1rem'}}>
-                        <h1 className="title is-4">Start chatting</h1>
-                        <div style={{marginBottom: "1rem"}}>To start a chat just send the following link to the desired
-                            person:
+                    <div className="field has-addons start-link">
+                        <div className="control is-expanded">
+                            <input className="input is-medium" value={link} readOnly={true} aria-label="Chat link"
+                                   onFocus={event => event.target.select()}/>
                         </div>
-
-                        <div className="columns is-gapless is-mobile">
-                            <div className="column">
-                                <input className="input" value={link} readOnly={true}
-                                       style={{marginBottom: "1rem", borderRadius: '4px 0 0 4px'}}/>
-                            </div>
-                            <div className="column is-narrow">
-                                <CopyToClipboard text={link} onCopy={() => this.setState({wasCopied: true})}>
-                                    {this.state.wasCopied ? (
-                                        <button className="button is-primary has-text-weight-bold"
-                                                style={{borderRadius: '0 4px 4px 0'}}>
-                                            <span>Copied!</span>
-                                        </button>
-                                    ) : (
-                                        <button className="button is-primary" style={{borderRadius: '0 4px 4px 0'}}>
-                                            <span className="icon m-0"><CopyIcon/></span>
-                                            <span className="is-sr-only">Copy link</span>
-                                        </button>
-                                    )}
-                                </CopyToClipboard>
-                            </div>
+                        <div className="control">
+                            <CopyToClipboard text={link} onCopy={this.confirmCopy}>
+                                <button type="button" className="button is-primary is-medium">
+                                    <span className="icon">{this.state.wasCopied ? <CheckIcon/> : <CopyIcon/>}</span>
+                                    <span className="is-sr-only">{this.state.wasCopied ? 'Link copied' : 'Copy link'}</span>
+                                </button>
+                            </CopyToClipboard>
                         </div>
-
-                        <h2 className="subtitle is-5">Share link</h2>
-                        <div className="columns">
-                            <div className="column">
-                                <a href={"https://telegram.me/share/url?url=" + link}
-                                   className="button is-primary is-fullwidth has-text-weight-bold"
-                                   target="_blank"
-                                >
-                                    <span className="icon"><TelegramIcon/></span>
-                                    <span>Telegram</span>
-                                </a>
-                            </div>
-
-                            <div className="column">
-                                <a href={"https://wa.me/?text=" + link}
-                                   className="button is-primary is-fullwidth has-text-weight-bold"
-                                   target="_blank"
-                                >
-                                    <span className="icon"><WhatsAppIcon/></span>
-                                    <span>WhatsApp</span>
-                                </a>
-                            </div>
-
-                            <div className="column">
-                                <a href={"mailto:?subject=&body=" + link}
-                                   className="button is-primary is-fullwidth has-text-weight-bold"
-                                   target="_blank"
-                                >
-                                    <span>E-Mail</span>
-                                </a>
-                            </div>
-                        </div>
-
-                        <h2 className="subtitle is-4">How it works</h2>
-                        <p>We believe that everyone has the right to communicate privately. That's why we provide
-                            otr.to, a tool that allows you to chat P2P. That is, with a direct connection between you
-                            and your conversation partner.</p>
-
-                        <div className="columns">
-                            <div className="column">
-                                <strong>Peer to peer communication</strong> You communicate directly, no logs saved on
-                                any servers
-                            </div>
-                            <div className="column">
-                                <strong>Absolutely anonymous</strong> and registration free
-                            </div>
-                        </div>
-
-                        <div className="columns">
-                            <div className="column">
-                                <strong>Browser based</strong> You don't need to install any software and neither ask
-                                somebody else to do it, too
-                            </div>
-                            <div className="column">
-                                <strong>No chat history</strong> It's all deleted with closing your browser tab
-                            </div>
-                        </div>
-
-                        <hr/>
-
-                        <a href="https://github.com/jermainee/otr.to" className="button" target="_blank">
-                            <span className="icon mr-2"><GitHubIcon/></span>
-                            <span>View on GitHub</span>
-                        </a>
                     </div>
-                </div>
-            </div>
+
+                    <p className="status-line" role="status">
+                        <span className="status-dot" aria-hidden="true"/>
+                        {this.state.wasCopied
+                            ? 'Link copied. Waiting for someone to open it'
+                            : 'Waiting for someone to open the link'}
+                    </p>
+
+                    <h2 className="start-share-title">Or share it with</h2>
+                    <div className="columns start-share">
+                        <div className="column">
+                            <a href={"https://telegram.me/share/url?url=" + shared}
+                               className="button is-primary is-fullwidth has-text-weight-bold"
+                               target="_blank" rel="noopener noreferrer"
+                            >
+                                <span className="icon"><TelegramIcon/></span>
+                                <span>Telegram</span>
+                            </a>
+                        </div>
+
+                        <div className="column">
+                            <a href={"https://wa.me/?text=" + shared}
+                               className="button is-primary is-fullwidth has-text-weight-bold"
+                               target="_blank" rel="noopener noreferrer"
+                            >
+                                <span className="icon"><WhatsAppIcon/></span>
+                                <span>WhatsApp</span>
+                            </a>
+                        </div>
+
+                        <div className="column">
+                            <a href={"mailto:?subject=&body=" + shared}
+                               className="button is-primary is-fullwidth has-text-weight-bold"
+                            >
+                                <span>Email</span>
+                            </a>
+                        </div>
+                    </div>
+                </section>
+
+                <section className="start-about" aria-labelledby="about-title">
+                    <h2 id="about-title" className="title is-5">How it works</h2>
+                    <p className="start-about-intro">We believe that everyone has the right to communicate privately. That’s why we provide
+                        otr.to, a tool that allows you to chat P2P. That is, with a direct connection between you
+                        and your conversation partner.</p>
+
+                    <div className="start-features">
+                        <p>
+                            <strong>Peer to peer communication</strong> You communicate directly, no logs saved on
+                            any servers
+                        </p>
+                        <p>
+                            <strong>Absolutely anonymous</strong> and registration free
+                        </p>
+                        <p>
+                            <strong>Browser based</strong> You don’t need to install any software and neither ask
+                            somebody else to do it, too
+                        </p>
+                        <p>
+                            <strong>No chat history</strong> It’s all deleted with closing your browser tab
+                        </p>
+                    </div>
+
+                    <hr/>
+
+                    <a href="https://github.com/jermainee/otr.to" className="button" target="_blank" rel="noopener noreferrer">
+                        <span className="icon mr-2"><GitHubIcon/></span>
+                        <span>View on GitHub</span>
+                    </a>
+                </section>
+            </main>
         );
     }
 
-    private renderFileTransfers() {
-        const transfers = Array.from(this.state.fileTransfers.values());
-        if (transfers.length === 0) return null;
-
+    /** A screen of its own for a state the chat cannot go on from. */
+    private renderNotice(title: string, text: string, action?: React.ReactNode) {
         return (
-            <div className="container" style={{ marginTop: '1rem' }}>
-                {transfers.map(transfer => (
-                    <div key={transfer.id} className="box" style={{ marginBottom: '0.5rem' }}>
-                        <div className="columns is-mobile is-vcentered">
-                            <div className="column">
-                                <strong>{transfer.name}</strong> ({this.formatFileSize(transfer.size)})
-                                <br />
-                                <small>
-                                    {transfer.isComplete ? 'Transfer completed' :
-                                        `${transfer.receivedChunks}/${transfer.totalChunks} chunks received`}
-                                </small>
-                            </div>
-                            <div className="column is-narrow">
-                                {transfer.isComplete && (
-                                    <button
-                                        className="button is-small is-primary"
-                                        onClick={() => this.downloadFile(transfer)}
-                                    >
-                                        Download
+            <main className="container state-screen" aria-busy={this.state.status === 'connecting'}>
+                <h1 className="title is-4">
+                    {this.state.status === 'connecting' && <span className="status-dot" aria-hidden="true"/>}
+                    {title}
+                </h1>
+                <p>{text}</p>
+                {action}
+            </main>
+        );
+    }
+
+    private renderConversation() {
+        return (
+            <>
+                <main className="container chat">
+                    <h1 className="is-sr-only">Chat</h1>
+                    <Messages messages={this.state.messages}
+                              transfers={this.state.fileTransfers}
+                              onDownload={this.downloadFile}/>
+                </main>
+
+                <footer className="chat-composer">
+                    {this.state.status === 'connected' ? (
+                        <form className="container" onSubmit={this.sendMessage}>
+                            <div className="field has-addons">
+                                <div className="control">
+                                    <input ref={this.fileInputRef} type="file" hidden={true} multiple={true}
+                                           onChange={this.handleFileSelect}/>
+                                    <button type="button" className="button" aria-label="Attach files" title="Attach files"
+                                            onClick={() => this.fileInputRef.current?.click()}>
+                                        <span className="icon"><AttachIcon/></span>
                                     </button>
-                                )}
+                                </div>
+                                <div className="control is-expanded">
+                                    <input className="input"
+                                           name="userInput"
+                                           type="text"
+                                           placeholder="Type your message"
+                                           aria-label="Message"
+                                           autoComplete="off"
+                                           autoCapitalize="off"
+                                           autoCorrect="off"
+                                           spellCheck="false"
+                                           required={true}
+                                           autoFocus={true}
+                                    />
+                                </div>
+                                <div className="control">
+                                    <button type="submit" className="button is-primary" aria-label="Send">
+                                        <span className="icon"><SendIcon/></span>
+                                    </button>
+                                </div>
                             </div>
+                        </form>
+                    ) : (
+                        <div className="container chat-ended">
+                            <p>The chat has ended.</p>
+                            <a className="button is-primary" href="/">Start a new chat</a>
                         </div>
-                        <progress
-                            className="progress is-primary"
-                            value={transfer.progress}
-                            max="100"
-                        >
-                            {transfer.progress}%
-                        </progress>
-                    </div>
-                ))}
-            </div>
+                    )}
+                </footer>
+            </>
         );
     }
 
     private createPeer(): Peer {
         const peer = new Peer(this.peerId, {config: this.config});
-        this.setState({showLink: true});
 
         peer.on('connection', connection => {
-            console.log('open', peer.connections);
+            this.saveMessage(new Message('Someone opened your link. You’re connected.', true, true));
+            this.setState({status: 'connected', connection});
 
-            this.setState({showLink: false});
-
-            this.saveMessage(new Message('Connected to Peer', true, true));
-            this.setState({connection});
-
-            connection.on('data', (data: string | FileMessage) => {
-                if (typeof data === 'string') {
-                    this.saveMessage(new Message(data, false));
-                } else {
-                    this.handleFileMessage(data);
-                }
-            });
-
-            connection.on('close', () => this.saveMessage(new Message('Peer has left the chat', true, true)));
+            connection.on('data', this.receive);
+            connection.on('close', this.leave);
         });
 
-        peer.on('error', error => console.log('error', error));
+        peer.on('error', error => {
+            console.log('error', error);
+
+            // Once two peers talk, they no longer need the connection server.
+            if (this.state.status === 'waiting') {
+                this.setState({status: 'offline'});
+            }
+        });
 
         return peer;
     }
 
     private connect(peer: Peer, targetPeerId: string): void {
-        peer.on('open', id => {
-            this.saveMessage(new Message('Created Peer: ' + id, true, true));
+        peer.on('error', error => {
+            console.log('error', error);
 
+            if (this.state.status === 'connecting') {
+                this.setState({status: error.type === 'peer-unavailable' ? 'unavailable' : 'offline'});
+            }
+        });
+
+        peer.on('open', () => {
             const connection = peer.connect(targetPeerId);
             connection.on('open', () => {
-                this.saveMessage(new Message('Connected to Peer: ' + targetPeerId, true, true));
-                this.setState({ connection });
+                this.saveMessage(new Message('You’re connected.', true, true));
+                this.setState({status: 'connected', connection});
 
-                connection.on('data', (data: string | FileMessage) => {
-                    if (typeof data === 'string') {
-                        this.saveMessage(new Message(data, false));
-                    } else {
-                        this.handleFileMessage(data);
-                    }
-                });
+                connection.on('data', this.receive);
             });
 
-            setTimeout(() => {
-                if (this.state.connection === null) {
-                    this.saveMessage(new Message('Peer not found', true, true));
-                    window.location.href = '/';
+            // peerjs reports a link that nobody answers, but not always
+            // quickly, so give up after a while either way.
+            this.dialTimer = window.setTimeout(() => {
+                if (this.state.status === 'connecting') {
+                    this.setState({status: 'unavailable'});
                 }
-            }, 6000);
+            }, DIAL_TIMEOUT);
 
-            connection.on('close', () => this.saveMessage(new Message('Peer has left the chat', true, true)));
+            connection.on('close', this.leave);
         });
     }
 
-    private sendMessage = (event) => {
+    private receive = (data: string | FileMessage) => {
+        if (typeof data === 'string') {
+            this.saveMessage(new Message(data, false));
+        } else {
+            this.handleFileMessage(data);
+        }
+    }
+
+    /**
+     * A closed tab just disappears, and the other side would keep waiting for
+     * it. Closing the connection on the way out tells it that the chat ended.
+     */
+    private hangUp = () => {
+        this.state.connection?.close();
+    }
+
+    private leave = () => {
+        if (this.state.status === 'connecting') {
+            this.setState({status: 'unavailable'});
+            return;
+        }
+
+        this.saveMessage(new Message('The other person left the chat.', true, true));
+        this.setState({status: 'ended'});
+    }
+
+    private confirmCopy = () => {
+        window.clearTimeout(this.copiedTimer);
+        this.setState({wasCopied: true});
+        this.copiedTimer = window.setTimeout(() => this.setState({wasCopied: false}), COPIED_FOR);
+    }
+
+    private sendMessage = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        const message = event.target.elements.userInput.value;
-        event.target.reset();
+        const input = event.currentTarget.elements.namedItem('userInput') as HTMLInputElement;
+        const message = input.value;
+        event.currentTarget.reset();
+
+        if (message.trim() === '') {
+            return;
+        }
 
         this.saveMessage(new Message(message, true));
         this.state.connection.send(message);
@@ -374,7 +410,20 @@ export default class Chat extends React.Component<{}, IChatState> {
         };
 
         this.state.connection.send(startMessage);
-        this.saveMessage(new Message(`📎 Sending file: ${file.name} (${this.formatFileSize(file.size)})`, true, true));
+        this.trackTransfer({
+            id: fileId,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            direction: 'outgoing',
+            chunks: [],
+            totalChunks,
+            receivedChunks: 0,
+            isComplete: false,
+            isSaved: false,
+            progress: 0,
+        });
+        this.saveMessage(new Message(file.name, true, false, fileId));
 
         // Send file in chunks
         const arrayBuffer = await file.arrayBuffer();
@@ -400,55 +449,64 @@ export default class Chat extends React.Component<{}, IChatState> {
         };
 
         this.state.connection.send(endMessage);
-        this.saveMessage(new Message(`✅ File sent: ${file.name}`, true, true));
+        this.updateTransfer(fileId, transfer => ({...transfer, isComplete: true, progress: 100}));
     }
 
     private handleFileMessage = (message: FileMessage) => {
-        const { fileTransfers } = this.state;
-
         switch (message.type) {
             case 'file-start':
-                const newTransfer: FileTransfer = {
+                this.trackTransfer({
                     id: message.fileId,
                     name: message.fileName!,
                     size: message.fileSize!,
                     type: message.fileType!,
+                    direction: 'incoming',
                     chunks: new Array(message.totalChunks!),
                     totalChunks: message.totalChunks!,
                     receivedChunks: 0,
                     isComplete: false,
+                    isSaved: false,
                     progress: 0
-                };
-
-                fileTransfers.set(message.fileId, newTransfer);
-                this.setState({ fileTransfers: new Map(fileTransfers) });
-                this.saveMessage(new Message(`📎 Receiving file: ${message.fileName} (${this.formatFileSize(message.fileSize!)})`, false, true));
+                });
+                this.saveMessage(new Message(message.fileName!, false, false, message.fileId));
                 break;
 
             case 'file-chunk':
-                const transfer = fileTransfers.get(message.fileId);
-                if (transfer && message.chunk) {
-                    transfer.chunks[message.chunkIndex!] = message.chunk;
-                    transfer.receivedChunks++;
-                    transfer.progress = Math.round((transfer.receivedChunks / transfer.totalChunks) * 100);
+                if (message.chunk) {
+                    this.updateTransfer(message.fileId, transfer => {
+                        // The chunks array is only ever written to, so filling
+                        // it in place spares a copy per chunk.
+                        transfer.chunks[message.chunkIndex!] = message.chunk;
+                        const receivedChunks = transfer.receivedChunks + 1;
 
-                    fileTransfers.set(message.fileId, transfer);
-                    this.setState({ fileTransfers: new Map(fileTransfers) });
+                        return {
+                            ...transfer,
+                            receivedChunks,
+                            progress: Math.round((receivedChunks / transfer.totalChunks) * 100),
+                        };
+                    });
                 }
                 break;
 
             case 'file-end':
-                const completedTransfer = fileTransfers.get(message.fileId);
-                if (completedTransfer) {
-                    completedTransfer.isComplete = true;
-                    completedTransfer.progress = 100;
-
-                    fileTransfers.set(message.fileId, completedTransfer);
-                    this.setState({ fileTransfers: new Map(fileTransfers) });
-                    this.saveMessage(new Message(`✅ File received: ${completedTransfer.name}`, false, true));
-                }
+                this.updateTransfer(message.fileId, transfer => ({...transfer, isComplete: true, progress: 100}));
                 break;
         }
+    }
+
+    private trackTransfer(transfer: FileTransfer) {
+        this.setState(state => ({fileTransfers: new Map(state.fileTransfers).set(transfer.id, transfer)}));
+    }
+
+    /** Applies a change to a known transfer; transfers it never saw start are ignored. */
+    private updateTransfer(id: string, change: (transfer: FileTransfer) => FileTransfer) {
+        this.setState(state => {
+            const transfer = state.fileTransfers.get(id);
+
+            return transfer === undefined
+                ? null
+                : {fileTransfers: new Map(state.fileTransfers).set(id, change(transfer))};
+        });
     }
 
     private downloadFile = (transfer: FileTransfer) => {
@@ -473,34 +531,39 @@ export default class Chat extends React.Component<{}, IChatState> {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        // Remove transfer from state
-        const { fileTransfers } = this.state;
-        fileTransfers.delete(transfer.id);
-        this.setState({ fileTransfers: new Map(fileTransfers) });
+        // Keep the file in the conversation, but let go of its bytes.
+        this.updateTransfer(transfer.id, saved => ({...saved, chunks: [], isSaved: true}));
     }
 
     private generateFileId = (): string => {
         return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
     }
 
-    private formatFileSize = (bytes: number): string => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    private targetPeerId(): string {
+        return window.top.location.hash.substr(1);
     }
 
     private saveMessage = (message: Message) => {
-        this.setState({
-            messages: [
-                ...this.state.messages,
-                message
-            ]
-        });
+        // Follow the conversation, unless someone scrolled up to reread it.
+        const page = document.documentElement;
+        const follow = message.isSender || page.scrollHeight - page.scrollTop - window.innerHeight < 160;
 
-        setTimeout(() => {
-            document.querySelector('html').scrollTop = 999999999;
-        }, 1);
+        this.setState(state => ({messages: [...state.messages, message]}), () => {
+            if (follow) {
+                this.scrollToEnd();
+            }
+        });
+    }
+
+    private scrollToEnd() {
+        const page = document.documentElement;
+        const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+        // jsdom has no scrollTo on elements; every browser does.
+        if (typeof page.scrollTo === 'function') {
+            page.scrollTo({top: page.scrollHeight, behavior: calm ? 'auto' : 'smooth'});
+        } else {
+            page.scrollTop = page.scrollHeight;
+        }
     }
 }

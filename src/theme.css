@@ -8,3 +8,39 @@
         --bulma-primary-invert-l: 100%;
     }
 }
+
+:root {
+    /* Focus rings in the brand colour rather than Bulma's link blue. */
+    --bulma-focus-h: var(--bulma-primary-h);
+    --bulma-focus-s: var(--bulma-primary-s);
+    --bulma-focus-l: var(--bulma-primary-l);
+
+    --otr-primary: hsl(var(--bulma-primary-h), var(--bulma-primary-s), var(--bulma-primary-l));
+
+    /*
+     * Own messages are read all the time, so they need more contrast than
+     * white on the bright turquoise gives (1.9:1). A deeper shade of the same
+     * hue carries white text at 4.9:1.
+     */
+    --otr-own-bubble: hsl(var(--bulma-primary-h), var(--bulma-primary-s), 25%);
+    --otr-own-text: #fff;
+    --otr-peer-bubble: var(--bulma-background);
+    --otr-peer-text: var(--bulma-text-strong);
+
+    accent-color: var(--otr-primary);
+    scrollbar-color: var(--bulma-border) transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Dark text on the turquoise, like the buttons in dark mode. */
+        --otr-own-bubble: var(--otr-primary);
+        --otr-own-text: hsl(var(--bulma-primary-h), var(--bulma-primary-s), var(--bulma-primary-invert-l));
+        /* Bulma's background sits too close to the page to read as a bubble. */
+        --otr-peer-bubble: hsl(var(--bulma-scheme-h), var(--bulma-scheme-s), 18%);
+    }
+}
+
+::selection {
+    background-color: hsla(var(--bulma-primary-h), var(--bulma-primary-s), var(--bulma-primary-l), 0.3);
+}

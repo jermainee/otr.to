@@ -24,8 +24,8 @@ the conversation is gone when the tab is closed.
 1. Opening otr.to without a link creates a peer with a random 22-character ID
    and shows the chat link, `https://otr.to/#<peer-id>`.
 2. Whoever opens that link creates a peer of their own and connects to the ID
-   after the `#`. If nobody answers within six seconds, the page reports that
-   the peer was not found and goes back to the start.
+   after the `#`. If nobody answers within six seconds, the page says the chat
+   is no longer open and offers to start a new one.
 3. The [PeerJS](https://peerjs.com) signalling server introduces the two
    browsers to each other. From then on, everything goes over the WebRTC data
    channel, which is encrypted with DTLS.
@@ -117,13 +117,16 @@ Dependabot checks the npm packages and the GitHub Actions weekly.
 
 ```
 index.tsx              Entry point: mounts the app and the router
-src/Chat.tsx           Peer setup, messaging, file transfer and share link
-src/Messages.tsx       Message list
-src/Service/           Peer ID generation
-src/Struct/            Message model
+src/Chat.tsx           Peer setup, connection states, file transfer and share link
+src/Messages.tsx       The conversation: messages, notices and files
+src/Icons.tsx          Inline SVG icons that take the text colour
+src/theme.css          Colour tokens and Bulma overrides for light and dark mode
+src/chat.css           Layout of the start page and the conversation
+src/Service/           Peer ID generation and file size formatting
+src/Struct/            Message and file transfer models
 src/__tests__/         Jest tests
 e2e/                   Playwright tests and the static server they use
-public/                Static site: index.html, manifest, icons and the bundle
+public/                Static site: index.html, manifest and the bundle
 ```
 
 ## Deployment
