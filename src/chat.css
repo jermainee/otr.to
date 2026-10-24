@@ -293,6 +293,16 @@
     margin-bottom: 0;
 }
 
+/*
+ * The message input keeps its usual border when focused: it is the one
+ * thing to type into on the page, and the caret already shows it has focus.
+ */
+.chat-composer .input:focus,
+.chat-composer .input:focus-within {
+    border-color: var(--bulma-input-border-color);
+    box-shadow: var(--bulma-input-shadow);
+}
+
 .chat-ended {
     display: flex;
     align-items: center;
