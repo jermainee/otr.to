@@ -1,0 +1,44 @@
+/*! bulma.io | MIT License | github.com/jgthms/bulma */
+
+/*
+ * The parts of Bulma that otr.to uses, in the order bulma.scss loads them.
+ * A class from any other module (has-text-primary, is-flex, notification,
+ * modal, ...) needs its module added here first.
+ */
+@use "bulma/sass/utilities";
+@use "bulma/sass/utilities/css-variables" as cv;
+@use "bulma/sass/utilities/initial-variables" as iv;
+@use "bulma/sass/themes/light";
+@use "bulma/sass/themes/dark";
+@use "bulma/sass/themes/setup";
+@use "bulma/sass/base";
+@use "bulma/sass/elements/button";
+@use "bulma/sass/elements/icon";
+@use "bulma/sass/elements/progress";
+@use "bulma/sass/elements/title";
+@use "bulma/sass/form/input-textarea";
+@use "bulma/sass/form/tools";
+@use "bulma/sass/components/navbar";
+@use "bulma/sass/grid/columns";
+@use "bulma/sass/layout/container";
+@use "bulma/sass/helpers/spacing";
+@use "bulma/sass/helpers/typography";
+@use "bulma/sass/helpers/visibility";
+
+/*
+ * Bulma's themes/_index.scss writes these variables five times: on :root,
+ * again for each prefers-color-scheme, and for [data-theme] and .theme-*
+ * switches. Nothing here switches themes by hand, and the light media query
+ * only repeats :root (writing --bulma-text and --bulma-link as hsla(..., 1)
+ * instead of hsl(...), the same colours), so :root and the dark media query
+ * are all the page needs. Sass wants every @use first, which puts this last;
+ * no other :root rule sets these variables, so the cascade is the same.
+ */
+#{iv.$variables-host} {
+    @include light.light-theme;
+    @include setup.setup-theme;
+}
+
+@include cv.system-theme($name: "dark") {
+    @include dark.dark-theme;
+}
