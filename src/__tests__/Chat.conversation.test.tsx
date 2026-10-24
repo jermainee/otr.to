@@ -273,7 +273,7 @@ describe('Chat as the guest who opened a link', () => {
         try {
             const {peer} = renderChatDialling('a-peer-that-is-gone');
 
-            act(() => { jest.advanceTimersByTime(5999); });
+            act(() => { jest.advanceTimersByTime(14999); });
 
             expect(heading('This chat is no longer open')).not.toBeInTheDocument();
 
