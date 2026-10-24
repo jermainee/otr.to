@@ -10,7 +10,7 @@ async function controlled(page: Page): Promise<void> {
     await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
 }
 
-test('can be installed as an app', async ({baseURL}) => {
+test('can be installed as an app, from the navbar', async ({baseURL}) => {
     // Chrome only checks in the full browser, not the headless shell, and not
     // in the throwaway contexts the other tests get, which count as incognito.
     const context = await chromium.launchPersistentContext(test.info().outputPath('profile'), {channel: 'chromium', baseURL});
@@ -25,6 +25,7 @@ test('can be installed as an app', async ({baseURL}) => {
         const {installabilityErrors} = await devTools.send('Page.getInstallabilityErrors');
 
         expect(installabilityErrors).toEqual([]);
+        await expect(page.getByRole('navigation').getByRole('button', {name: 'Install app'})).toBeVisible();
     } finally {
         await context.close();
     }

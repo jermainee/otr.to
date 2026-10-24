@@ -26,8 +26,9 @@ tab is closed.
 - **Easy sharing.** Copy the chat link or share it straight to Telegram,
   WhatsApp or email. Anyone in the chat can copy an invite link for more
   people.
-- **Installable.** Add otr.to to your home screen, or install it from the
-  browser's address bar, and it opens in a window of its own, even without a
+- **Installable.** Install otr.to with the button in the navbar, which
+  Chrome, Edge and Samsung Internet show, or add it to your home screen from
+  Safari's share menu, and it opens in a window of its own, even without a
   connection. Chatting still needs one.
 
 ## How it works
@@ -190,6 +191,7 @@ Dependabot checks the npm packages and the GitHub Actions weekly.
 index.tsx                  Entry point: mounts the app and the router
 src/Chat.tsx               Connection states, notices, file transfer and share link
 src/Messages.tsx           The conversation: messages, names, notices and files
+src/InstallButton.tsx      The navbar's install button, while the browser offers to install
 src/Icons.tsx              Inline SVG icons that take the text colour
 src/bulma.scss             The Bulma modules the app uses
 src/theme.css              Colour tokens and Bulma overrides for light and dark mode

@@ -1,3 +1,40 @@
+/* Navbar: the logo on the left, and on the right the install button, when there is one. */
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+}
+
+.navbar-install {
+    display: flex;
+    align-items: center;
+    padding-inline: .75rem;
+}
+
+/*
+ * Outlined in the navbar's text colour, like the logo, so it belongs to the
+ * navbar rather than competing with the page. Bulma's focus ring is the
+ * turquoise of the navbar itself, so it gets one in the text colour too.
+ */
+.navbar-install .button {
+    --otr-navbar-text: hsl(var(--bulma-primary-h), var(--bulma-primary-s), var(--bulma-primary-invert-l));
+
+    background-color: transparent;
+    border-color: var(--otr-navbar-text);
+    color: var(--otr-navbar-text);
+}
+
+.navbar-install .button:hover {
+    background-color: var(--otr-navbar-text);
+    color: var(--otr-primary);
+}
+
+.navbar-install .button:focus-visible {
+    box-shadow: none;
+    outline: 2px solid var(--otr-navbar-text);
+    outline-offset: 2px;
+}
+
 /* Start page: the link is the task, everything else explains it. */
 
 .start {
