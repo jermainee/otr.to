@@ -1,4 +1,6 @@
 const path = require("path");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
 const config = {
     entry: ["./index.tsx"],
     output: {
@@ -11,9 +13,11 @@ const config = {
     module: {
         rules: [
             {
+                // The styles go into a file of their own that index.html links
+                // in <head>, so the page is styled before the script arrives.
                 test: /\.s[ac]ss$/i,
                 use: [
-                    "style-loader",
+                    MiniCssExtractPlugin.loader,
                     "css-loader",
                     "sass-loader",
                 ],
@@ -21,7 +25,7 @@ const config = {
             {
                 test: /\.css$/i,
                 use: [
-                    "style-loader",
+                    MiniCssExtractPlugin.loader,
                     "css-loader"
                 ],
             },
@@ -31,7 +35,10 @@ const config = {
                 exclude: /node_modules/
             }
         ]
-    }
+    },
+    plugins: [
+        new MiniCssExtractPlugin({filename: "bundle.css"}),
+    ],
 };
 
 module.exports = config;
