@@ -1,0 +1,107 @@
+# Installs the TURN relay (turn/) on the VPS after every merge to main.
+# Secrets: VPS_HOST, VPS_USER, VPS_SSH_KEY; optional VPS_KNOWN_HOSTS and VPS_PORT.
+# One-time VPS setup: turn/README.md
+name: Deploy TURN relay
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'turn/**'
+      - '.github/workflows/deploy-turn.yml'
+      - '.github/workflows/turn-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never two deploys at once, a running one is not cancelled
+concurrency:
+  group: deploy-turn
+  cancel-in-progress: false
+
+jobs:
+  test:
+    uses: ./.github/workflows/turn-tests.yml
+
+  deploy:
+    needs: test
+    # A manual run from another branch must not put unreviewed code on the server
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          # Pasted secrets often carry spaces or a line break at the end
+          host=$(printf '%s' "$VPS_HOST" | tr -d '[:space:]')
+          user=$(printf '%s' "$VPS_USER" | tr -d '[:space:]')
+          port=$(printf '%s' "${VPS_PORT:-22}" | tr -d '[:space:]')
+          if [ -z "$host" ] || [ -z "$user" ] || [ -z "$VPS_SSH_KEY" ]; then
+            echo "::error::The secrets VPS_HOST, VPS_USER and VPS_SSH_KEY are missing."
+            exit 1
+          fi
+          # known_hosts names a host on another port as [host]:port
+          entry="$host"
+          [ "$port" = 22 ] || entry="[$host]:$port"
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [ -n "$VPS_KNOWN_HOSTS" ]; then
+            # Windows line endings out, and a bare public key gets the host in front
+            printf '%s\n' "$VPS_KNOWN_HOSTS" | tr -d '\r' | while read -r line; do
+              case "$line" in
+                '' | '#'*) ;;
+                ssh-* | ecdsa-* | sk-*) printf '%s %s\n' "$entry" "$line" ;;
+                *) printf '%s\n' "$line" ;;
+              esac
+            done > ~/.ssh/known_hosts
+            if ! ssh-keygen -F "$entry" -f ~/.ssh/known_hosts > /dev/null; then
+              echo "::error::VPS_KNOWN_HOSTS has no entry for VPS_HOST. It needs a line like '<VPS_HOST> ssh-ed25519 AAAA...', see turn/README.md."
+              echo "Keys in VPS_KNOWN_HOSTS and the host each one is for:"
+              ssh-keygen -lf ~/.ssh/known_hosts 2> /dev/null || echo "  none readable"
+              echo "Key the server presents:"
+              ssh-keyscan -p "$port" -t ed25519 "$host" 2> /dev/null | ssh-keygen -lf - 2> /dev/null || echo "  none received"
+              exit 1
+            fi
+          else
+            echo "::warning::VPS_KNOWN_HOSTS is missing, the host key of the VPS is accepted unverified."
+            ssh-keyscan -p "$port" "$host" > ~/.ssh/known_hosts 2> /dev/null
+          fi
+          cat > ~/.ssh/config <<EOF
+          Host vps
+            HostName $host
+            Port $port
+            User $user
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            BatchMode yes
+            ConnectTimeout 20
+          EOF
+
+      - name: Upload and install
+        run: |
+          release="$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::12}"
+          tar -C turn -czf - . \
+            | ssh vps 'rm -rf ~/otr-turn-upload && mkdir -p ~/otr-turn-upload && tar -xzf - -C ~/otr-turn-upload'
+          # install.sh needs root: directly as root, otherwise through passwordless sudo
+          ssh vps bash -s -- "$release" <<'REMOTE'
+          set -euo pipefail
+          trap 'rm -rf "$HOME/otr-turn-upload"' EXIT
+          sudo=""
+          [ "$(id -u)" -eq 0 ] || sudo="sudo -n"
+          $sudo bash "$HOME/otr-turn-upload/deploy/install.sh" "$HOME/otr-turn-upload" "$1"
+          REMOTE
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

@@ -72,6 +72,17 @@ export default class Chat extends React.Component<{}, IChatState> {
             // Public, free and run by two providers, so one being down is not
             // enough to cut every chat off. They see who asks, not the chat.
             {urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302']},
+            // Our own relay (turn/), for when the browsers find no direct
+            // route, as behind two strict NATs. Over TCP for networks that
+            // block UDP. It only ever sees encrypted packets. Every browser
+            // gets these credentials, so they are no secret; they only keep
+            // the relay from being open to all. turn/turnserver.conf has the
+            // same, a test checks that both agree.
+            {
+                urls: ['turn:turn.otr.to:3478?transport=udp', 'turn:turn.otr.to:3478?transport=tcp'],
+                username: 'otr',
+                credential: 'g2TWHJVSMpSxLe23effavSMo',
+            },
         ]
     };
 

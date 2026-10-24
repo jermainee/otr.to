@@ -1,0 +1,44 @@
+# TURN relay of otr.to (coturn), see turn/README.md
+# Installed and updated by deploy/install.sh (also via .github/workflows/deploy-turn.yml).
+# The packaged coturn.service stays masked, this unit runs coturn with turn/turnserver.conf.
+[Unit]
+Description=otr.to TURN relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+# --pidfile= without a name: no pid file, systemd knows the process
+ExecStart=/usr/bin/turnserver -c /opt/otr-turn/current/turnserver.conf --pidfile=
+Restart=on-failure
+RestartSec=2
+
+# Session lines name the addresses of the people chatting, keep only warnings and errors
+LogLevelMax=warning
+
+# Leave the VPS to the other service on it as well
+CPUQuota=50%
+MemoryMax=256M
+LimitNOFILE=65536
+
+# Throwaway user of its own, the ports are all above 1024
+DynamicUser=yes
+CapabilityBoundingSet=
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target
