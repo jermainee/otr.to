@@ -1,14 +1,15 @@
 import {expect, test} from "@playwright/test";
-import {messageInput, openAsHost, shareLinkInput} from "./support/conversation";
+import {messageInput, openAsHost, partsOf, shareLinkInput} from "./support/conversation";
 
 test.describe('Waiting for someone to join', () => {
-    test('offers a link built from the peer the browser just registered', async ({context}) => {
+    test('offers a link built from the peer the browser just registered and the chat’s secret', async ({context}) => {
         const host = await openAsHost(context);
 
         const link = await shareLinkInput(host).inputValue();
-        const peerId = link.split('#')[1];
+        const {peerId, secret} = partsOf(link);
 
         expect(peerId).toHaveLength(22);
+        expect(secret).toMatch(/^[0-9A-Za-z]{22}$/);
         await expect(host.getByRole('heading', {name: 'Start a private chat'})).toBeVisible();
         await expect(host.getByRole('status')).toHaveText('Waiting for someone to open the link');
         await expect(messageInput(host)).toHaveCount(0);

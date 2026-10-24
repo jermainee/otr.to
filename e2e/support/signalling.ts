@@ -8,11 +8,16 @@ import {BrowserContext, WebSocketRoute} from "@playwright/test";
  * The WebRTC connection the tests exercise is therefore the real thing; only
  * the broker that introduces the two peers to each other is local, so the
  * suite neither needs the internet nor the public PeerJS cloud to be up.
+ *
+ * Everything the browsers tell it goes into `log`, so a test can check what
+ * the signalling server gets to see.
  */
-export async function relaySignalling(context: BrowserContext): Promise<void> {
+export async function relaySignalling(context: BrowserContext, log: string[] = []): Promise<void> {
     const peers = new Map<string, WebSocketRoute>();
 
     await context.routeWebSocket(/\/peerjs\?/, socket => {
+        log.push(socket.url());
+
         const id = new URL(socket.url()).searchParams.get('id');
 
         if (id === null) {
@@ -24,6 +29,7 @@ export async function relaySignalling(context: BrowserContext): Promise<void> {
         socket.send(JSON.stringify({type: 'OPEN'}));
 
         socket.onMessage(raw => {
+            log.push(String(raw));
             const message = JSON.parse(String(raw));
 
             if (message.type === 'HEARTBEAT') {

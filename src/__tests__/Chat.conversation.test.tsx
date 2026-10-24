@@ -1,6 +1,18 @@
-import {act, fireEvent, screen} from "@testing-library/react";
-import FakePeer from "../__mocks__/peerjs";
-import {renderChatAsGuest, renderChatAsHost, renderChatDialling, renderChatWaiting} from "../testUtils/renderChat";
+import {act, fireEvent, screen, waitFor} from "@testing-library/react";
+import * as React from "react";
+import {render} from "@testing-library/react";
+import Chat from "../Chat";
+import FakePeer, {FakeDataConnection} from "../__mocks__/peerjs";
+import {
+    deliver,
+    deliverRaw,
+    renderChatAsGuest,
+    renderChatAsHost,
+    renderChatDialling,
+    renderChatWaiting,
+    sentOver,
+    textsSentOver,
+} from "../testUtils/renderChat";
 
 beforeEach(() => FakePeer.reset());
 afterEach(() => { window.location.hash = ''; });
@@ -35,56 +47,111 @@ describe('Waiting for a peer', () => {
 });
 
 describe('Chat as the host of the link', () => {
-    it('registers the peer under the generated id', () => {
-        renderChatAsHost();
+    it('registers the peer under the generated id', async () => {
+        await renderChatAsHost();
 
         expect(FakePeer.instances[0].id).toHaveLength(22);
     });
 
-    it('trades the share link for the conversation once someone connects', () => {
-        renderChatAsHost();
+    it('trades the share link for the conversation once someone connects', async () => {
+        await renderChatAsHost();
 
         expect(heading('Start a private chat')).not.toBeInTheDocument();
-        expect(screen.getByText('Someone opened your link. You’re connected.')).toHaveClass('chat-notice');
+        expect(screen.getByText('Someone opened your link. You’re connected. Messages are end-to-end encrypted.'))
+            .toHaveClass('chat-notice');
         expect(messageInput()).toBeInTheDocument();
     });
 
-    it('sends what was typed and echoes it as an own message', () => {
-        const {connection} = renderChatAsHost();
+    it('waits for the hello before it counts anyone as connected', () => {
+        const {peer} = renderChatWaiting();
+        const connection = new FakeDataConnection('visiting-peer-id');
+
+        act(() => peer.emit('connection', connection));
+        act(() => connection.emit('open'));
+
+        expect(heading('Start a private chat')).toBeInTheDocument();
+    });
+
+    it('greets a new connection with who is in the chat, which is nobody yet', async () => {
+        const {connection} = await renderChatAsHost();
+
+        await waitFor(() => expect(connection.sent.length).toBeGreaterThanOrEqual(1));
+
+        expect((await sentOver(connection))[0]).toEqual({type: 'members', ids: []});
+    });
+
+    it('turns away someone who does not hold the key, without a word', async () => {
+        const {peer} = renderChatWaiting();
+        const connection = new FakeDataConnection('a-stranger');
+
+        act(() => peer.emit('connection', connection));
+        act(() => connection.emit('open'));
+        await deliverRaw(connection, 'hello?');
+
+        expect(connection.closed).toBe(true);
+        expect(heading('Start a private chat')).toBeInTheDocument();
+    });
+
+    it('sends what was typed and echoes it as an own message', async () => {
+        const {connection} = await renderChatAsHost();
 
         type('are you there?');
 
-        expect(connection.sent).toEqual(['are you there?']);
+        expect(await textsSentOver(connection)).toEqual(['are you there?']);
         expect(screen.getByText('are you there?').closest('.chat-row')).toHaveClass('is-own');
     });
 
-    it('clears the input after sending', () => {
-        renderChatAsHost();
+    it('encrypts what it sends', async () => {
+        const {connection} = await renderChatAsHost();
+
+        type('are you there?');
+        await textsSentOver(connection);
+
+        connection.sent.forEach(data => {
+            expect(data).toBeInstanceOf(ArrayBuffer);
+            expect(new TextDecoder().decode(data)).not.toContain('are you there?');
+        });
+    });
+
+    it('clears the input after sending', async () => {
+        await renderChatAsHost();
 
         type('sent and forgotten');
 
         expect(messageInput().value).toBe('');
     });
 
-    it('does not send a message of nothing but spaces', () => {
-        const {connection} = renderChatAsHost();
+    it('does not send a message of nothing but spaces', async () => {
+        const {connection} = await renderChatAsHost();
 
         type('   ');
+        type('the next one');
 
-        expect(connection.sent).toEqual([]);
-        expect(document.querySelectorAll('.chat-row')).toHaveLength(0);
+        expect(await textsSentOver(connection)).toEqual(['the next one']);
+        expect(document.querySelectorAll('.chat-row')).toHaveLength(1);
     });
 
-    it('shows incoming text as a message from the peer', () => {
-        const {connection} = renderChatAsHost();
+    it('shows incoming text as a message from the peer', async () => {
+        const {connection} = await renderChatAsHost();
 
-        act(() => connection.emit('data', 'yes, right here'));
+        await deliver(connection, {type: 'text', text: 'yes, right here'});
 
         expect(screen.getByText('yes, right here').closest('.chat-row')).toHaveClass('is-peer');
     });
 
-    it('opens the file picker from the attach button', () => {
-        renderChatAsHost();
+    it('ignores what does not open with the key, once someone is in', async () => {
+        const {connection} = await renderChatAsHost();
+
+        await deliverRaw(connection, 'yes, right here');
+        await deliver(connection, {type: 'text', text: 'this one is sealed'});
+
+        expect(screen.queryByText('yes, right here')).not.toBeInTheDocument();
+        expect(screen.getByText('this one is sealed')).toBeInTheDocument();
+        expect(connection.closed).toBe(false);
+    });
+
+    it('opens the file picker from the attach button', async () => {
+        await renderChatAsHost();
 
         const picker = document.querySelector('input[type="file"]') as HTMLInputElement;
         const click = jest.spyOn(picker, 'click').mockImplementation(() => undefined);
@@ -97,26 +164,64 @@ describe('Chat as the host of the link', () => {
         click.mockRestore();
     });
 
-    it('ends the chat when the peer leaves', () => {
-        const {connection} = renderChatAsHost();
+    it('ends the chat when the peer leaves', async () => {
+        const {connection, peer} = await renderChatAsHost();
 
         act(() => connection.emit('close'));
 
         expect(screen.getByText('The other person left the chat.')).toBeInTheDocument();
         expect(screen.queryByPlaceholderText('Type your message')).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: 'Start a new chat'})).toHaveAttribute('href', '/');
+        // Its link stops working, too.
+        expect(peer.destroyed).toBe(true);
     });
 
-    it('hangs up when the page goes away, so the peer learns about it', () => {
-        const {connection} = renderChatAsHost();
+    it('ends the chat when the connection to the peer is lost, saying so', async () => {
+        jest.useFakeTimers();
+
+        try {
+            await renderChatAsHost();
+
+            // Nothing more arrives from the peer, not even a heartbeat.
+            act(() => { jest.advanceTimersByTime(35000); });
+
+            expect(screen.getByText('Lost the connection to the other person.')).toHaveClass('chat-notice');
+            expect(screen.queryByPlaceholderText('Type your message')).not.toBeInTheDocument();
+            expect(screen.getByText('The chat has ended.')).toBeInTheDocument();
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    it('stays connected to a peer that keeps beating', async () => {
+        jest.useFakeTimers();
+
+        try {
+            const {connection} = await renderChatAsHost();
+
+            for (let beat = 0; beat < 12; beat++) {
+                act(() => { jest.advanceTimersByTime(5000); });
+                await deliver(connection, {type: 'heartbeat'});
+            }
+
+            expect(messageInput()).toBeInTheDocument();
+            expect(document.querySelectorAll('.chat-row')).toHaveLength(0);
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    it('hangs up when the page goes away, so the peer learns about it', async () => {
+        const {connection, peer} = await renderChatAsHost();
 
         act(() => { window.dispatchEvent(new Event('pagehide')); });
 
         expect(connection.closed).toBe(true);
+        expect(peer.destroyed).toBe(true);
     });
 
-    it('keeps chatting when the connection server goes away later', () => {
-        const {peer} = renderChatAsHost();
+    it('keeps chatting when the connection server goes away later', async () => {
+        const {peer} = await renderChatAsHost();
 
         act(() => peer.emit('error', {type: 'network'}));
 
@@ -133,30 +238,30 @@ describe('Chat as the guest who opened a link', () => {
         expect(heading('Start a private chat')).not.toBeInTheDocument();
     });
 
-    it('announces the connection', () => {
-        renderChatAsGuest('the-hosts-peer-id');
+    it('announces the connection', async () => {
+        await renderChatAsGuest('the-hosts-peer-id');
 
-        expect(screen.getByText('You’re connected.')).toHaveClass('chat-notice');
+        expect(screen.getByText('You’re connected. Messages are end-to-end encrypted.')).toHaveClass('chat-notice');
         expect(heading('Connecting to the chat')).not.toBeInTheDocument();
     });
 
-    it('can talk to the host', () => {
-        const {connection} = renderChatAsGuest();
+    it('can talk to the host', async () => {
+        const {connection} = await renderChatAsGuest();
 
         type('hi from the link');
-        act(() => connection.emit('data', 'welcome'));
+        await deliver(connection, {type: 'text', text: 'welcome'});
 
-        expect(connection.sent).toEqual(['hi from the link']);
+        expect(await textsSentOver(connection)).toEqual(['hi from the link']);
         expect(screen.getByText('welcome')).toBeInTheDocument();
     });
 
-    it('receives files from the host, too', () => {
-        const {connection} = renderChatAsGuest();
+    it('receives files from the host, too', async () => {
+        const {connection} = await renderChatAsGuest();
 
-        act(() => connection.emit('data', {
+        await deliver(connection, {
             type: 'file-start', fileId: 'file-1', fileName: 'route.gpx',
             fileSize: 1024, fileType: 'application/gpx+xml', totalChunks: 1,
-        }));
+        });
 
         expect(document.querySelector('.chat-file')).toHaveTextContent('route.gpx');
         expect(document.querySelector('.chat-file')).toHaveTextContent('1 KB, 0% received');
@@ -196,5 +301,42 @@ describe('Chat as the guest who opened a link', () => {
         act(() => peer.emit('error', {type: 'server-error'}));
 
         expect(heading('Can’t reach the connection server')).toBeInTheDocument();
+    });
+
+    it('gives up when the host turns it away, for a key that does not fit', async () => {
+        const {peer} = renderChatDialling();
+        const connection = peer.outgoing[0];
+
+        act(() => connection.emit('open'));
+        await deliverRaw(connection, new ArrayBuffer(64));
+
+        expect(connection.closed).toBe(true);
+        expect(heading('This chat is no longer open')).toBeInTheDocument();
+    });
+
+    it('gives up when the host hangs up before saying hello', () => {
+        const {peer} = renderChatDialling();
+        const connection = peer.outgoing[0];
+
+        act(() => connection.emit('open'));
+        act(() => connection.emit('close'));
+
+        expect(heading('This chat is no longer open')).toBeInTheDocument();
+    });
+});
+
+describe('A link that is no chat link', () => {
+    it.each([
+        ['only a peer id, like the links before encryption', '#a-peer-id'],
+        ['a secret that was cut short', '#a-peer-id.TestSecret'],
+        ['a secret with letters a link would not have', '#a-peer-id.TestSecret_ForTheLinks0'],
+    ])('explains itself for %s, and dials nobody', (_, hash) => {
+        window.location.hash = hash;
+
+        render(<Chat/>);
+
+        expect(heading('This link doesn’t work')).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: 'Start a new chat'})).toHaveAttribute('href', '/');
+        expect(FakePeer.instances).toHaveLength(0);
     });
 });

@@ -7,16 +7,19 @@ import {FileIcon} from "./Icons";
 interface IMessagesProps {
     messages: Message[];
     transfers: Map<string, FileTransfer>;
+    /** Whether to name who wrote what, which a chat of more than two people needs. */
+    showAuthors: boolean;
     onDownload: (transfer: FileTransfer) => void;
 }
 
-/** Whether two neighbouring messages come from the same side and run together. */
-const sameSide = (a: Message | undefined, b: Message | undefined): boolean =>
-    a !== undefined && b !== undefined && !a.isSystem && !b.isSystem && a.isSender === b.isSender;
+/** Whether two neighbouring messages come from the same person and run together. */
+const sameAuthor = (a: Message | undefined, b: Message | undefined): boolean =>
+    a !== undefined && b !== undefined && !a.isSystem && !b.isSystem
+    && a.isSender === b.isSender && a.author === b.author;
 
 export default class Messages extends React.Component<IMessagesProps> {
     public render() {
-        const {messages} = this.props;
+        const {messages, showAuthors} = this.props;
 
         return (
             <div className="chat-log" role="log" aria-label="Conversation">
@@ -25,19 +28,25 @@ export default class Messages extends React.Component<IMessagesProps> {
                         return <p key={index} className="chat-notice">{message.text}</p>;
                     }
 
+                    const isFollowed = sameAuthor(message, messages[index + 1]);
+                    const name = showAuthors && message.author !== null ? ChatHelper.nickname(message.author) : null;
                     const classes = [
                         'chat-row',
                         message.isSender ? 'is-own' : 'is-peer',
-                        sameSide(messages[index - 1], message) ? 'is-continued' : '',
-                        sameSide(message, messages[index + 1]) ? 'is-followed' : '',
+                        sameAuthor(messages[index - 1], message) ? 'is-continued' : '',
+                        isFollowed ? 'is-followed' : '',
                     ];
 
                     return (
                         <div key={index} className={classes.filter(Boolean).join(' ')}>
-                            <span className="is-sr-only">{message.isSender ? 'You: ' : 'They: '}</span>
+                            <span className="is-sr-only">{message.isSender ? 'You' : name ?? 'They'}: </span>
                             {message.fileId === null
                                 ? <p className="chat-bubble chat-text">{message.text}</p>
                                 : this.renderFile(message.fileId)}
+                            {/* Once under the last message of a run; screen readers heard it up front. */}
+                            {name !== null && !isFollowed && (
+                                <p className="chat-author" aria-hidden="true">{name}</p>
+                            )}
                         </div>
                     );
                 })}

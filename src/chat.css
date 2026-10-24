@@ -108,6 +108,28 @@
 
 /* The conversation. */
 
+/* Who is in the chat and how to bring in more, under the navbar while the conversation scrolls. */
+.chat-bar {
+    position: sticky;
+    top: var(--bulma-navbar-height);
+    z-index: 30;
+    border-bottom: 1px solid var(--bulma-border-weak);
+    background-color: var(--bulma-scheme-main);
+}
+
+.chat-bar .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .5rem 1rem;
+}
+
+.chat-bar p {
+    font-size: .875rem;
+    color: var(--bulma-text-weak);
+}
+
 .chat {
     /* Room for the composer, which sits on top of the page. */
     padding: 1.25rem 1rem calc(6rem + env(safe-area-inset-bottom));
@@ -131,6 +153,8 @@
 
 .chat-row {
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     margin-top: .75rem;
 }
 
@@ -139,7 +163,15 @@
 }
 
 .chat-row.is-own {
-    justify-content: flex-end;
+    align-items: flex-end;
+}
+
+/* In a group, who wrote a run of messages, under its last bubble. */
+.chat-author {
+    margin: .25rem .875rem 0;
+    font-size: .75rem;
+    line-height: 1.2;
+    color: var(--bulma-text-weak);
 }
 
 .chat-bubble {

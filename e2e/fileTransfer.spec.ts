@@ -23,7 +23,7 @@ test('the sender sees the file leave, and keeps chatting', async ({context}) => 
 
     await expect(fileTransfers(guest)).toContainText('notes.txt');
     await expect(fileTransfers(guest)).toContainText('2 KB, sent');
-    await expect(notices(guest)).toHaveText(['You’re connected.']);
+    await expect(notices(guest)).toHaveText(['You’re connected. Messages are end-to-end encrypted.']);
 
     await send(guest, 'that is the one');
     await expect(host.getByText('that is the one')).toBeVisible();
