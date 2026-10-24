@@ -110,6 +110,7 @@ describe('The share link', () => {
             screen.getByRole('button', {name: 'Copy link'}),
             screen.getByRole('link', {name: 'Telegram'}),
             screen.getByRole('link', {name: 'WhatsApp'}),
+            screen.getByRole('link', {name: 'Email'}),
             screen.getByRole('link', {name: 'View on GitHub'}),
         ];
 

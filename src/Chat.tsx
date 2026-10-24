@@ -6,7 +6,7 @@ import Message from "./Struct/Message";
 import FileTransfer from "./Struct/FileTransfer";
 import Packet from "./Struct/Packet";
 import Messages from "./Messages";
-import {AttachIcon, CheckIcon, CopyIcon, GitHubIcon, SendIcon, TelegramIcon, WhatsAppIcon} from "./Icons";
+import {AttachIcon, CheckIcon, CopyIcon, GitHubIcon, MailIcon, SendIcon, TelegramIcon, WhatsAppIcon} from "./Icons";
 import {CopyToClipboard} from 'react-copy-to-clipboard';
 
 /**
@@ -217,6 +217,7 @@ export default class Chat extends React.Component<{}, IChatState> {
                             <a href={"mailto:?subject=&body=" + shared}
                                className="button is-primary is-fullwidth has-text-weight-bold"
                             >
+                                <span className="icon"><MailIcon/></span>
                                 <span>Email</span>
                             </a>
                         </div>
