@@ -48,7 +48,8 @@ The chat itself never touches a server, but a few are needed to set it up:
 
 - [React](https://react.dev) and [TypeScript](https://www.typescriptlang.org)
 - [PeerJS](https://github.com/peers/peerjs) for WebRTC
-- [Bulma](https://bulma.io) for styling
+- [Bulma](https://bulma.io) for styling, only the modules that
+  [`src/bulma.scss`](src/bulma.scss) lists
 - [webpack](https://webpack.js.org) for bundling
 - [Jest](https://jestjs.io), [Testing Library](https://testing-library.com) and
   [Playwright](https://playwright.dev) for tests
@@ -64,9 +65,9 @@ npm install
 npm run dev
 ```
 
-`npm run dev` writes the bundle to `public/dist` and rebuilds it on every
-change. Serve the `public` folder with any static file server to open the app,
-for example the one the end-to-end tests use:
+`npm run dev` writes the script and the stylesheet to `public/dist` and
+rebuilds them on every change. Serve the `public` folder with any static file
+server to open the app, for example the one the end-to-end tests use:
 
 ```sh
 node e2e/static-server.js
@@ -80,7 +81,7 @@ conversation, open the app in one tab and the chat link it shows in another.
 | Command                 | What it does                                                |
 | ----------------------- | ----------------------------------------------------------- |
 | `npm run dev`           | Builds in development mode and rebuilds on every change.    |
-| `npm run build`         | Builds a minified production bundle into `public/dist`.     |
+| `npm run build`         | Builds the minified script and stylesheet in `public/dist`. |
 | `npm test`              | Runs the Jest suite once.                                   |
 | `npm run test:watch`    | Runs Jest in watch mode.                                    |
 | `npm run test:coverage` | Runs Jest with a coverage report in `coverage/`.            |
@@ -93,9 +94,10 @@ a mock (`src/__mocks__/peerjs.ts`), so they never open a network connection.
 
 **End-to-end tests** live in `e2e` and drive two browser tabs through a real
 chat over WebRTC: the share link and its buttons, messages in both directions,
-a stale link, and file transfers down to the downloaded bytes. Only the PeerJS
-signalling server is stubbed (`e2e/support/signalling.ts`), so the suite needs
-no internet connection. Install the browser once before the first run:
+a stale link, and file transfers down to the downloaded bytes. Another test
+holds the script back to check that the page is styled without it. Only the
+PeerJS signalling server is stubbed (`e2e/support/signalling.ts`), so the suite
+needs no internet connection. Install the browser once before the first run:
 
 ```sh
 npx playwright install chromium
@@ -120,6 +122,7 @@ index.tsx              Entry point: mounts the app and the router
 src/Chat.tsx           Peer setup, connection states, file transfer and share link
 src/Messages.tsx       The conversation: messages, notices and files
 src/Icons.tsx          Inline SVG icons that take the text colour
+src/bulma.scss         The Bulma modules the app uses
 src/theme.css          Colour tokens and Bulma overrides for light and dark mode
 src/chat.css           Layout of the start page and the conversation
 src/Service/           Peer ID generation and file size formatting
