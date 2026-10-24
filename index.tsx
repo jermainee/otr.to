@@ -15,3 +15,9 @@ createRoot(document.getElementById("root")).render(
         </Routes>
     </Router>
 );
+
+// Opens the app without a connection and makes it installable (public/sw.js).
+// After the page has loaded, so it doesn't compete with it for bandwidth.
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}

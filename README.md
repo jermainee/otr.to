@@ -5,8 +5,8 @@
 Peer-to-peer chat in your web browser. Open [otr.to](https://otr.to), send the
 link it gives you to one person or several, and you talk over direct
 connections between your browsers, end-to-end encrypted. There is no account,
-nothing to install, and no history: the conversation is gone when the tab is
-closed.
+nothing you have to install, and no history: the conversation is gone when the
+tab is closed.
 
 ## Features
 
@@ -26,6 +26,9 @@ closed.
 - **Easy sharing.** Copy the chat link or share it straight to Telegram,
   WhatsApp or email. Anyone in the chat can copy an invite link for more
   people.
+- **Installable.** Add otr.to to your home screen, or install it from the
+  browser's address bar, and it opens in a window of its own, even without a
+  connection. Chatting still needs one.
 
 ## How it works
 
@@ -62,6 +65,11 @@ closed.
    as a download.
 8. Nicknames come from a hash of the peer ID, so everyone works out the same
    name for the same person without asking anyone.
+9. A service worker ([`public/sw.js`](public/sw.js)) keeps a copy of the page,
+   the script and the stylesheet, so the app opens without a connection and
+   browsers offer to install it. It always asks the network first, so an
+   online visit gets the current version, and it files every chat link under
+   the plain address, so the key after the `#` never ends up on disk.
 
 ### What servers are involved
 
@@ -131,6 +139,7 @@ conversation, open the app in one tab and the chat link it shows in another.
 | Command                 | What it does                                                |
 | ----------------------- | ----------------------------------------------------------- |
 | `npm run dev`           | Builds in development mode and rebuilds on every change.    |
+| `npm run icons`         | Draws the app icons in `public` from the logo.              |
 | `npm run build`         | Builds the minified script and stylesheet in `public/dist`. |
 | `npm test`              | Runs the Jest suite once.                                   |
 | `npm run test:watch`    | Runs Jest in watch mode.                                    |
@@ -147,9 +156,11 @@ over WebRTC: the share link and its buttons, messages in both directions, a
 stale link, file transfers down to the downloaded bytes, group chats of three
 and four, and checks that nothing readable crosses a data channel and that the
 signalling server never sees the secret. Another test holds the script back to
-check that the page is styled without it. Only the PeerJS signalling server is
-stubbed (`e2e/support/signalling.ts`), so the suite needs no internet
-connection. Install the browser once before the first run:
+check that the page is styled without it, and the last ones check that Chrome
+would install the app, that it opens offline, and that the secret stays out of
+its cache. Only the PeerJS signalling server is stubbed
+(`e2e/support/signalling.ts`), so the suite needs no internet connection.
+Install the browser once before the first run:
 
 ```sh
 npx playwright install chromium
@@ -189,7 +200,8 @@ src/Service/ChatHelper.ts  Peer IDs, chat links, nicknames, file sizes
 src/Struct/                Message, packet and file transfer models
 src/__tests__/             Jest tests
 e2e/                       Playwright tests and the static server they use
-public/                    Static site: index.html, manifest and the bundle
+public/                    Static site: index.html, manifest, service worker, icons and the bundle
+scripts/icons.js           Draws the app icons from the logo
 turn/                      The TURN relay: coturn configuration and its deploy
 ```
 
