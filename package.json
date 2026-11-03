@@ -36,7 +36,7 @@
     "jest": "^30.5.2",
     "jest-environment-jsdom": "^30.5.2",
     "mini-css-extract-plugin": "^2.10.2",
-    "sass": "^1.106.1",
+    "sass": "^1.107.1",
     "sass-loader": "^17.0.1",
     "ts-jest": "^29.4.15",
     "ts-loader": "^9.6.2",
